@@ -1,4 +1,4 @@
-const { addBan, removeBan } = require('../database');
+const { addBan, removeBan, Ban } = require('../database');
 
 /**
  * Ban a user from a guild and record it in the database.
@@ -37,4 +37,29 @@ async function unbanUser(client, guildId, userId) {
   }
 }
 
-module.exports = { banUser, unbanUser };
+/**
+ * Explain query execution for the Ban collection.
+ * Useful for diagnosing MongoDB indexing issues.
+ * @param {Client} client Discord.js client (unused but kept for parity)
+ * @param {Message} message Discord.js message to respond to
+ */
+async function explainBanQuery(client, message) {
+  try {
+    const stats = await Ban.collection.find().explain('executionStats');
+    const json = JSON.stringify(stats, null, 2);
+    if (message && message.channel) {
+      // Discord has a 2000 character limit per message
+      const output = json.length > 1900 ? json.slice(0, 1900) + '\n... (truncated)' : json;
+      await message.channel.send(`\`\`\`json\n${output}\n\`\`\``);
+    } else {
+      console.log(json);
+    }
+  } catch (err) {
+    console.error('Failed to explain Ban query:', err);
+    if (message && message.channel) {
+      await message.channel.send('Failed to retrieve query stats.');
+    }
+  }
+}
+
+module.exports = { banUser, unbanUser, explainBanQuery };

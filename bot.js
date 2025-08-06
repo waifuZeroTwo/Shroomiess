@@ -1,5 +1,5 @@
 require('dotenv').config();
-const { Client, GatewayIntentBits, Collection, Partials } = require('discord.js');
+const { Client, GatewayIntentBits, Collection, Partials, PermissionsBitField } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
 const db = require('./database');
@@ -85,6 +85,18 @@ client.on('messageCreate', async (message) => {
       } catch (err) {
         console.error('Unban failed:', err);
         return message.reply('Failed to unban user.');
+      }
+    }
+
+    if (command === '!banexplain' && moderation) {
+      if (!message.member?.permissions.has(PermissionsBitField.Flags.Administrator)) {
+        return message.reply('This command is restricted to administrators.');
+      }
+      try {
+        await moderation.explainBanQuery(client, message);
+      } catch (err) {
+        console.error('Explain failed:', err);
+        return message.reply('Failed to retrieve query stats.');
       }
     }
   } catch (err) {
