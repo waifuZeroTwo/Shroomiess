@@ -1,6 +1,7 @@
-const mongoose = require('mongoose');
-const Ban = require('./banModel');
-const { run: testMongoConnection } = require('./mongoClient');
+const { MongoClient } = require('mongodb');
+
+let client;
+let bans;
 
 async function init() {
   const mongoUri = process.env.MONGODB_URI;
@@ -8,26 +9,32 @@ async function init() {
     console.warn('MONGODB_URI is not defined.');
     return;
   }
+  client = new MongoClient(mongoUri);
   try {
-    await mongoose.connect(mongoUri);
-    await Ban.init();
+    await client.connect();
+    const db = client.db('Discord_Bot');
+    bans = db.collection('ban');
     console.log('Connected to MongoDB');
   } catch (err) {
     console.error('MongoDB connection error:', err);
   }
 }
 
-function addBan(data) {
-  const ban = new Ban(data);
-  return ban.save();
+async function addBan(data) {
+  const { userId, guildId } = data;
+  await bans.updateOne({ userId, guildId }, { $set: data }, { upsert: true });
 }
 
 function removeBan(guildId, userId) {
-  return Ban.deleteOne({ guildId, userId });
+  return bans.deleteOne({ userId, guildId });
 }
 
 function getBan(guildId, userId) {
-  return Ban.findOne({ guildId, userId });
+  return bans.findOne({ userId, guildId });
 }
 
-module.exports = { init, addBan, removeBan, getBan, Ban, testMongoConnection };
+async function close() {
+  await client.close();
+}
+
+module.exports = { init, addBan, removeBan, getBan, close };
