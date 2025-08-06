@@ -9,10 +9,15 @@ const { addBan, removeBan } = require('../database');
  * @param {object} [options] Additional options such as duration in ms
  */
 async function banUser(client, guildId, userId, reason, options = {}) {
-  const guild = await client.guilds.fetch(guildId);
-  await guild.members.ban(userId, { reason, ...options });
-  const expiresAt = options.duration ? new Date(Date.now() + options.duration) : null;
-  await addBan({ userId, guildId, reason, expiresAt });
+  try {
+    const guild = await client.guilds.fetch(guildId);
+    await guild.members.ban(userId, { reason, ...options });
+    const expiresAt = options.duration ? new Date(Date.now() + options.duration) : null;
+    await addBan({ userId, guildId, reason, expiresAt });
+  } catch (err) {
+    console.error(`Error banning user ${userId} in guild ${guildId}:`, err);
+    throw err;
+  }
 }
 
 /**
@@ -22,9 +27,14 @@ async function banUser(client, guildId, userId, reason, options = {}) {
  * @param {string} userId ID of the user to unban
  */
 async function unbanUser(client, guildId, userId) {
-  const guild = await client.guilds.fetch(guildId);
-  await guild.members.unban(userId);
-  await removeBan(guildId, userId);
+  try {
+    const guild = await client.guilds.fetch(guildId);
+    await guild.members.unban(userId);
+    await removeBan(guildId, userId);
+  } catch (err) {
+    console.error(`Error unbanning user ${userId} in guild ${guildId}:`, err);
+    throw err;
+  }
 }
 
 module.exports = { banUser, unbanUser };
