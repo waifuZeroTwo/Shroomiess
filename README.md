@@ -9,9 +9,17 @@ Create a `.env` file with the following values:
 ```
 DISCORD_BOT_TOKEN=your_bot_token
 MONGODB_URI=your_mongodb_connection_string
+DB_PASSWORD=your_mongodb_user_password
 ```
 
 The bot connects to MongoDB to store active bans.
+
+### MongoDB Connections
+
+Mongoose is used for all schema-based operations, such as storing bans. If you need
+to interact with MongoDB using the native driver—for example, to test a raw
+connection—use `database/mongoClient.js`. This helper requires `DB_PASSWORD` to
+be set and exposes a `testMongoConnection()` function that pings the database.
 
 ## Commands
 
