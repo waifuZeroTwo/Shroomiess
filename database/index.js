@@ -14,7 +14,7 @@ async function init() {
   const mongoUri = process.env.MONGODB_URI;
   if (!mongoUri) {
     console.warn('MONGODB_URI is not defined.');
-    return;
+    throw new Error('MONGODB_URI is not defined');
   }
   client = new MongoClient(mongoUri);
   try {
@@ -24,6 +24,7 @@ async function init() {
     console.log('Connected to MongoDB');
   } catch (err) {
     console.error('MongoDB connection error:', err);
+    throw err;
   }
 }
 
