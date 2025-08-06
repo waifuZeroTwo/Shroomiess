@@ -115,7 +115,12 @@ async function start() {
     throw new Error('DISCORD_BOT_TOKEN is not defined in environment variables.');
   }
 
-  await db.init();
+  try {
+    await db.init();
+  } catch (err) {
+    console.error('Failed to initialize database:', err);
+    throw err;
+  }
 
   try {
     await client.login(token);
