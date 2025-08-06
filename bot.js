@@ -38,7 +38,7 @@ client.once('ready', async () => {
   console.log(`Logged in as ${client.user.tag}`);
 
   if (moderation) {
-    const bans = await db.Ban.find({ expiresAt: { $gt: new Date() } });
+    const bans = await db.getActiveBans();
     for (const ban of bans) {
       try {
         const guild = await client.guilds.fetch(ban.guildId);

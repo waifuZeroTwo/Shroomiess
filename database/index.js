@@ -33,8 +33,12 @@ function getBan(guildId, userId) {
   return bans.findOne({ userId, guildId });
 }
 
+async function getActiveBans() {
+  return await bans.find({ expiresAt: { $gt: new Date() } }).toArray();
+}
+
 async function close() {
   await client.close();
 }
 
-module.exports = { init, addBan, removeBan, getBan, close };
+module.exports = { init, addBan, removeBan, getBan, getActiveBans, close };
