@@ -7,4 +7,6 @@ const banSchema = new mongoose.Schema({
   expiresAt: { type: Date }
 });
 
+banSchema.index({ guildId: 1, userId: 1 }, { unique: true });
+
 module.exports = mongoose.model('Ban', banSchema);

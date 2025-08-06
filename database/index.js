@@ -10,6 +10,7 @@ async function init() {
   }
   try {
     await mongoose.connect(mongoUri);
+    await Ban.init();
     console.log('Connected to MongoDB');
   } catch (err) {
     console.error('MongoDB connection error:', err);
