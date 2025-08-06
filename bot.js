@@ -64,11 +64,12 @@ client.on('messageCreate', async (message) => {
 
     if (command === '!ban' && moderation) {
       const user = message.mentions.users.first();
-      if (!user) return message.reply('Please mention a user to ban.');
+      const userId = user ? user.id : args[0];
+      if (!userId) return message.reply('Provide a user mention or ID to ban.');
       const reason = args.slice(1).join(' ') || 'No reason provided';
       try {
-        await moderation.banUser(client, message.guild.id, user.id, reason);
-        return message.reply(`Banned ${user.tag}`);
+        await moderation.banUser(client, message.guild.id, userId, reason);
+        return message.reply(`Banned ${user ? user.tag : userId}`);
       } catch (err) {
         console.error('Ban failed:', err);
         return message.reply('Failed to ban user.');
