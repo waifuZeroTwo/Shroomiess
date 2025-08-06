@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const Ban = require('./banModel');
+const { run: testMongoConnection } = require('./mongoClient');
 
 async function init() {
   const mongoUri = process.env.MONGODB_URI;
@@ -28,4 +29,4 @@ function getBan(guildId, userId) {
   return Ban.findOne({ guildId, userId });
 }
 
-module.exports = { init, addBan, removeBan, getBan, Ban };
+module.exports = { init, addBan, removeBan, getBan, Ban, testMongoConnection };
