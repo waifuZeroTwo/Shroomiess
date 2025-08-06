@@ -38,13 +38,22 @@ client.once('ready', async () => {
   console.log(`Logged in as ${client.user.tag}`);
 
   if (moderation) {
-    const bans = await db.getActiveBans();
-    for (const ban of bans) {
+    // Ensure the database is available before trying to enforce bans
+    if (typeof db.isInitialized === 'function' && !db.isInitialized()) {
+      console.warn('Database not initialized; skipping ban enforcement.');
+    } else {
       try {
-        const guild = await client.guilds.fetch(ban.guildId);
-        await guild.members.ban(ban.userId, { reason: ban.reason });
+        const bans = await db.getActiveBans();
+        for (const ban of bans) {
+          try {
+            const guild = await client.guilds.fetch(ban.guildId);
+            await guild.members.ban(ban.userId, { reason: ban.reason });
+          } catch (err) {
+            console.error(`Failed to enforce ban for ${ban.userId}`, err);
+          }
+        }
       } catch (err) {
-        console.error(`Failed to enforce ban for ${ban.userId}`, err);
+        console.warn('Database unavailable; skipping ban enforcement.', err);
       }
     }
   }
