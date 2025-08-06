@@ -37,8 +37,12 @@ async function getActiveBans() {
   return await bans.find({ expiresAt: { $gt: new Date() } }).toArray();
 }
 
+function getBanCollection() {
+  return bans;
+}
+
 async function close() {
   await client.close();
 }
 
-module.exports = { init, addBan, removeBan, getBan, getActiveBans, close };
+module.exports = { init, addBan, removeBan, getBan, getActiveBans, getBanCollection, close };

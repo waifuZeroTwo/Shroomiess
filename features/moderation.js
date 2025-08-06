@@ -1,4 +1,4 @@
-const { addBan, removeBan, Ban } = require('../database');
+const { addBan, removeBan, getBanCollection } = require('../database');
 
 /**
  * Ban a user from a guild and record it in the database.
@@ -45,7 +45,8 @@ async function unbanUser(client, guildId, userId) {
  */
 async function explainBanQuery(client, message) {
   try {
-    const stats = await Ban.collection.find().explain('executionStats');
+    const banCollection = getBanCollection();
+    const stats = await banCollection.find().explain('executionStats');
     const json = JSON.stringify(stats, null, 2);
     if (message && message.channel) {
       // Discord has a 2000 character limit per message
