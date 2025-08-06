@@ -4,6 +4,10 @@ const fs = require('fs');
 const path = require('path');
 const db = require('./database');
 
+// Global error handlers to avoid silent crashes
+process.on('unhandledRejection', err => console.error('Unhandled promise rejection:', err));
+process.on('uncaughtException', err => console.error('Uncaught exception:', err));
+
 // Dynamically load features
 const features = {};
 const featuresPath = path.join(__dirname, 'features');
@@ -47,38 +51,47 @@ client.once('ready', async () => {
 });
 
 client.on('messageCreate', async (message) => {
-  if (message.author.bot) return;
-  if (!message.content.startsWith('!')) return;
+  try {
+    if (message.author.bot) return;
+    if (!message.content.startsWith('!')) return;
 
-  const args = message.content.trim().split(/\s+/);
-  const command = args.shift().toLowerCase();
+    const args = message.content.trim().split(/\s+/);
+    const command = args.shift().toLowerCase();
 
-  if (command === '!ping') {
-    return message.reply('Pong!');
-  }
-
-  if (command === '!ban' && moderation) {
-    const user = message.mentions.users.first();
-    if (!user) return message.reply('Please mention a user to ban.');
-    const reason = args.slice(1).join(' ') || 'No reason provided';
-    try {
-      await moderation.banUser(client, message.guild.id, user.id, reason);
-      return message.reply(`Banned ${user.tag}`);
-    } catch (err) {
-      console.error('Ban failed:', err);
-      return message.reply('Failed to ban user.');
+    if (command === '!ping') {
+      return message.reply('Pong!');
     }
-  }
 
-  if (command === '!unban' && moderation) {
-    const userId = args[0];
-    if (!userId) return message.reply('Please provide a user ID to unban.');
+    if (command === '!ban' && moderation) {
+      const user = message.mentions.users.first();
+      if (!user) return message.reply('Please mention a user to ban.');
+      const reason = args.slice(1).join(' ') || 'No reason provided';
+      try {
+        await moderation.banUser(client, message.guild.id, user.id, reason);
+        return message.reply(`Banned ${user.tag}`);
+      } catch (err) {
+        console.error('Ban failed:', err);
+        return message.reply('Failed to ban user.');
+      }
+    }
+
+    if (command === '!unban' && moderation) {
+      const userId = args[0];
+      if (!userId) return message.reply('Please provide a user ID to unban.');
+      try {
+        await moderation.unbanUser(client, message.guild.id, userId);
+        return message.reply(`Unbanned <@${userId}>`);
+      } catch (err) {
+        console.error('Unban failed:', err);
+        return message.reply('Failed to unban user.');
+      }
+    }
+  } catch (err) {
+    console.error('Error handling message:', err);
     try {
-      await moderation.unbanUser(client, message.guild.id, userId);
-      return message.reply(`Unbanned <@${userId}>`);
-    } catch (err) {
-      console.error('Unban failed:', err);
-      return message.reply('Failed to unban user.');
+      await message.reply('An error occurred while processing your command.');
+    } catch (replyErr) {
+      console.error('Failed to send error reply:', replyErr);
     }
   }
 });
