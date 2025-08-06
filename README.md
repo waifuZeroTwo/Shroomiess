@@ -8,11 +8,17 @@ Create a `.env` file with the following values:
 
 ```
 DISCORD_BOT_TOKEN=your_bot_token
-MONGODB_URI=your_mongodb_connection_string
+MONGODB_URI=your_mongodb_connection_string_including_db_name
 DB_PASSWORD=your_mongodb_user_password
 ```
 
 The bot connects to MongoDB to store active bans.
+
+The `MONGODB_URI` must include the database name. For example:
+
+```
+MONGODB_URI=mongodb+srv://ZeroTwo:<password>@cluster0.47tj0.mongodb.net/Discord_Bot?retryWrites=true&w=majority&appName=Cluster0
+```
 
 ### MongoDB Connections
 

@@ -9,7 +9,7 @@ async function init() {
     return;
   }
   try {
-    await mongoose.connect(mongoUri);
+    await mongoose.connect(mongoUri, { dbName: 'Discord_Bot' });
     console.log('Connected to MongoDB');
   } catch (err) {
     console.error('MongoDB connection error:', err);
