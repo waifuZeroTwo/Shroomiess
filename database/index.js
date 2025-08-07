@@ -10,6 +10,8 @@ let warnings;
 let mutes;
 let guildSettings;
 let birthdays;
+let reputations;
+let repTransactions;
 
 const DEFAULT_BIRTHDAY_FORMAT = 'YYYY-MM-DD';
 
@@ -48,6 +50,20 @@ function ensureBirthdays() {
   }
 }
 
+function ensureReputations() {
+  if (!reputations) {
+    console.warn('Reputations collection is not initialized. Call init() first.');
+    throw new Error('Database not initialized');
+  }
+}
+
+function ensureRepTransactions() {
+  if (!repTransactions) {
+    console.warn('RepTransactions collection is not initialized. Call init() first.');
+    throw new Error('Database not initialized');
+  }
+}
+
 async function init() {
   const mongoUri = process.env.MONGODB_URI;
   if (!mongoUri) {
@@ -63,6 +79,8 @@ async function init() {
     mutes = db.collection('mutes');
     guildSettings = db.collection('guildSettings');
     birthdays = db.collection('birthdays');
+    reputations = db.collection('reputations');
+    repTransactions = db.collection('repTransactions');
     console.log('Connected to MongoDB');
   } catch (err) {
     console.error('MongoDB connection error:', err);
@@ -208,6 +226,49 @@ async function getBirthdayFormat(guildId) {
   return doc && doc.birthdayFormat ? doc.birthdayFormat : DEFAULT_BIRTHDAY_FORMAT;
 }
 
+async function awardReputation({ guildId, fromUserId, toUserId, reason }) {
+  ensureReputations();
+  ensureRepTransactions();
+  const updateResult = await reputations.findOneAndUpdate(
+    { guildId, userId: toUserId },
+    {
+      $inc: { points: 1 },
+      $setOnInsert: { badges: [] }
+    },
+    { upsert: true, returnDocument: 'after' }
+  );
+  const transaction = {
+    guildId,
+    fromUserId,
+    toUserId,
+    reason,
+    createdAt: new Date()
+  };
+  await repTransactions.insertOne(transaction);
+  return updateResult.value;
+}
+
+async function getReputation(guildId, userId) {
+  ensureReputations();
+  const doc = await reputations.findOne({ guildId, userId });
+  if (!doc) {
+    return { points: 0, badges: [] };
+  }
+  return {
+    points: doc.points || 0,
+    badges: doc.badges || []
+  };
+}
+
+async function getLastRepTimestamp(guildId, fromUserId, toUserId) {
+  ensureRepTransactions();
+  const doc = await repTransactions.findOne(
+    { guildId, fromUserId, toUserId },
+    { sort: { createdAt: -1 } }
+  );
+  return doc ? doc.createdAt : null;
+}
+
 async function close() {
   await client.close();
 }
@@ -236,5 +297,8 @@ module.exports = {
   getBirthdayRole,
   setBirthdayFormat,
   getBirthdayFormat,
+  awardReputation,
+  getReputation,
+  getLastRepTimestamp,
   close
 };
