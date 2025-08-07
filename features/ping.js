@@ -1,5 +1,9 @@
 function register(client, commands) {
-  commands.set('!ping', '`!ping` - Check bot responsiveness.');
+  commands.set('!ping', {
+    description: '`!ping` - Check bot responsiveness.',
+    category: 'General',
+    adminOnly: false
+  });
 
   client.on('messageCreate', async (message) => {
     try {

@@ -2,10 +2,12 @@ const { EmbedBuilder, PermissionsBitField } = require('discord.js');
 const { setModLogChannel, getModLogChannel } = require('../database');
 
 function register(client, commands) {
-  commands.set(
-    '!setmodlog',
-    '`!setmodlog <#channel>` - Set the channel where moderation actions are logged.'
-  );
+  commands.set('!setmodlog', {
+    description:
+      '`!setmodlog <#channel>` - Set the channel where moderation actions are logged.',
+    category: 'Moderation',
+    adminOnly: true
+  });
 
   const modLogChannels = new Map();
 
