@@ -67,6 +67,7 @@ async function explainBanQuery(client, message) {
 function register(client, commands) {
   commands.set('!ban', '`!ban <@user|userId> [reason]` - Ban a user and record the reason.');
   commands.set('!unban', '`!unban <userId>` - Remove a ban and unban the user.');
+  commands.set('!kick', '`!kick <@user|userId> [reason]` - Kick a user from the guild.');
   commands.set(
     '!banexplain',
     '`!banexplain` - *Admin only.* Show MongoDB query stats for the ban collection.'
@@ -91,6 +92,23 @@ function register(client, commands) {
         } catch (err) {
           console.error('Ban failed:', err);
           return message.reply('Failed to ban user.');
+        }
+      }
+
+      if (command === '!kick') {
+        if (!message.member?.permissions.has(PermissionsBitField.Flags.KickMembers)) {
+          return message.reply('You do not have permission to use this command.');
+        }
+        const user = message.mentions.users.first();
+        const userId = user ? user.id : args[0];
+        if (!userId) return message.reply('Provide a user mention or ID to kick.');
+        const reason = args.slice(1).join(' ') || 'No reason provided';
+        try {
+          await message.guild.members.kick(userId, reason);
+          return message.reply(`Kicked ${user ? user.tag : userId}`);
+        } catch (err) {
+          console.error('Kick failed:', err);
+          return message.reply('Failed to kick user.');
         }
       }
 
