@@ -269,6 +269,14 @@ async function getLastRepTimestamp(guildId, fromUserId, toUserId) {
   return doc ? doc.createdAt : null;
 }
 
+async function addBadge(guildId, userId, badge) {
+  ensureReputations();
+  await reputations.updateOne(
+    { guildId, userId },
+    { $addToSet: { badges: badge } }
+  );
+}
+
 async function close() {
   await client.close();
 }
@@ -300,5 +308,6 @@ module.exports = {
   awardReputation,
   getReputation,
   getLastRepTimestamp,
+  addBadge,
   close
 };
