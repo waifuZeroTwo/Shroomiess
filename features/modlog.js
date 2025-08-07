@@ -83,6 +83,9 @@ function register(client, commands) {
   client.on('kick', (data) => sendLog(data.guildId, 'Kick', data));
   client.on('mute', (data) => sendLog(data.guildId, 'Mute', data));
   client.on('warn', (data) => sendLog(data.guildId, 'Warn', data));
+  client.on('modmail', (data) =>
+    sendLog(data.guildId, `Modmail ${data.action}`, data)
+  );
 }
 
 module.exports = { register };
