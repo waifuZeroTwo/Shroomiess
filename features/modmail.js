@@ -4,14 +4,20 @@ const {
   PermissionFlagsBits,
   ChannelType
 } = require('discord.js');
+const fs = require('fs');
+const path = require('path');
 
 const MAIN_GUILD_ID = '1165456303209054208';
 
 // Track active tickets keyed by user ID
-// { channelId, assignedAdminId }
+// { channelId, assignedAdminId, log }
 const activeTickets = new Map();
 
 function register(client, commands) {
+  commands.set('!claim', '`!claim` - Claim a modmail ticket.');
+  commands.set('!unclaim', '`!unclaim` - Unclaim the current ticket.');
+  commands.set('!close', '`!close` - Close the current ticket (assigned admin only).');
+
   // DM listener - open tickets and forward user messages
   client.on('messageCreate', async (message) => {
     try {
@@ -32,6 +38,12 @@ function register(client, commands) {
             .setDescription(message.content)
             .setTimestamp();
           await channel.send({ embeds: [embed] });
+          ticket.log.push({
+            from: 'user',
+            id: message.author.id,
+            content: message.content,
+            timestamp: Date.now()
+          });
         }
         return;
       }
@@ -96,7 +108,15 @@ function register(client, commands) {
 
       activeTickets.set(message.author.id, {
         channelId: channel.id,
-        assignedAdminId: null
+        assignedAdminId: null,
+        log: [
+          {
+            from: 'user',
+            id: message.author.id,
+            content: message.content,
+            timestamp: Date.now()
+          }
+        ]
       });
 
       client.emit('modmail', {
@@ -150,6 +170,31 @@ function register(client, commands) {
           return;
       }
 
+      if (content === '!close') {
+        if (ticket.assignedAdminId !== message.author.id) {
+          await message.reply('You are not the assigned admin.');
+        } else {
+          const user = await client.users.fetch(userId);
+          await user.send('Your ticket has been closed.');
+          const logsDir = path.join(__dirname, '..', 'ticket_logs');
+          fs.mkdirSync(logsDir, { recursive: true });
+          const filePath = path.join(logsDir, `${userId}-${Date.now()}.json`);
+          await fs.promises.writeFile(
+            filePath,
+            JSON.stringify(ticket.log, null, 2)
+          );
+          const channelId = message.channel.id;
+          await message.channel.delete().catch(() => null);
+          activeTickets.delete(userId);
+          client.emit('modmail', {
+            action: 'Closed',
+            userId,
+            channelId
+          });
+        }
+        return;
+      }
+
       if (ticket.assignedAdminId === message.author.id) {
         const user = await client.users.fetch(userId);
         const embed = new EmbedBuilder()
@@ -160,6 +205,12 @@ function register(client, commands) {
           .setDescription(message.content)
           .setTimestamp();
         await user.send({ embeds: [embed] });
+        ticket.log.push({
+          from: 'admin',
+          id: message.author.id,
+          content: message.content,
+          timestamp: Date.now()
+        });
       }
     } catch (err) {
       console.error('Error relaying modmail message:', err);
