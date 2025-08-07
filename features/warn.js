@@ -1,8 +1,16 @@
 const { addWarning, listWarnings } = require('../database');
 
 function register(client, commands) {
-  commands.set('!warn', '`!warn <@user|userId> [reason]` - Log a warning for a user.');
-  commands.set('!warnings', '`!warnings <userId>` - List warnings for a user.');
+  commands.set('!warn', {
+    description: '`!warn <@user|userId> [reason]` - Log a warning for a user.',
+    category: 'Moderation',
+    adminOnly: true
+  });
+  commands.set('!warnings', {
+    description: '`!warnings <userId>` - List warnings for a user.',
+    category: 'Moderation',
+    adminOnly: true
+  });
 
   client.on('messageCreate', async (message) => {
     try {

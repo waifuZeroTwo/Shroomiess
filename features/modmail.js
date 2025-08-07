@@ -14,13 +14,26 @@ const MAIN_GUILD_ID = '1165456303209054208';
 const activeTickets = new Map();
 
 function register(client, commands) {
-  commands.set('!claim', '`!claim` - Claim a modmail ticket.');
-  commands.set('!unclaim', '`!unclaim` - Unclaim the current ticket.');
-  commands.set('!close', '`!close` - Close the current ticket (assigned admin only).');
-  commands.set(
-    '!ticketlog',
-    '`!ticketlog <userId>` - Send the latest modmail log for a user.'
-  );
+  commands.set('!claim', {
+    description: '`!claim` - Claim a modmail ticket.',
+    category: 'Modmail',
+    adminOnly: true
+  });
+  commands.set('!unclaim', {
+    description: '`!unclaim` - Unclaim the current ticket.',
+    category: 'Modmail',
+    adminOnly: true
+  });
+  commands.set('!close', {
+    description: '`!close` - Close the current ticket (assigned admin only).',
+    category: 'Modmail',
+    adminOnly: true
+  });
+  commands.set('!ticketlog', {
+    description: '`!ticketlog <userId>` - Send the latest modmail log for a user.',
+    category: 'Modmail',
+    adminOnly: true
+  });
 
   // DM listener - open tickets and forward user messages
   client.on('messageCreate', async (message) => {

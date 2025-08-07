@@ -20,8 +20,16 @@ function parseDuration(str) {
 }
 
 function register(client, commands) {
-  commands.set('!mute', '`!mute <@user|userId> <duration> [reason]` - Temporarily mute a user.');
-  commands.set('!unmute', '`!unmute <userId>` - Remove a mute from a user.');
+  commands.set('!mute', {
+    description: '`!mute <@user|userId> <duration> [reason]` - Temporarily mute a user.',
+    category: 'Moderation',
+    adminOnly: true
+  });
+  commands.set('!unmute', {
+    description: '`!unmute <userId>` - Remove a mute from a user.',
+    category: 'Moderation',
+    adminOnly: true
+  });
 
   client.on('messageCreate', async (message) => {
     try {

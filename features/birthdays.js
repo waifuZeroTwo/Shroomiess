@@ -79,24 +79,40 @@ function parseDate(dateStr, format) {
 }
 
 function register(client, commands) {
-  commands.set(
-    '!setbirthday',
-    '`!setbirthday <date>` - store your birthday using the server\'s format.'
-  );
-  commands.set('!clearbirthday', '`!clearbirthday` - remove your birthday.');
-  commands.set('!birthdays', '`!birthdays` - list upcoming birthdays.');
-  commands.set(
-    '!setbirthdaychannel',
-    '`!setbirthdaychannel <#channel>` - set channel for birthday messages (ManageGuild).'
-  );
-  commands.set(
-    '!setbirthdayrole',
-    '`!setbirthdayrole <@role>` - set role assigned on birthdays (ManageGuild).'
-  );
-  commands.set(
-    '!setbirthdayformat',
-    `!setbirthdayformat <format> - set birthday date format. Formats: ${DATE_FORMATS.join(', ')} (ManageGuild).`
-  );
+  commands.set('!setbirthday', {
+    description:
+      "`!setbirthday <date>` - store your birthday using the server's format.",
+    category: 'Birthdays',
+    adminOnly: false
+  });
+  commands.set('!clearbirthday', {
+    description: '`!clearbirthday` - remove your birthday.',
+    category: 'Birthdays',
+    adminOnly: false
+  });
+  commands.set('!birthdays', {
+    description: '`!birthdays` - list upcoming birthdays.',
+    category: 'Birthdays',
+    adminOnly: false
+  });
+  commands.set('!setbirthdaychannel', {
+    description:
+      '`!setbirthdaychannel <#channel>` - set channel for birthday messages (ManageGuild).',
+    category: 'Birthdays',
+    adminOnly: true
+  });
+  commands.set('!setbirthdayrole', {
+    description:
+      '`!setbirthdayrole <@role>` - set role assigned on birthdays (ManageGuild).',
+    category: 'Birthdays',
+    adminOnly: true
+  });
+  commands.set('!setbirthdayformat', {
+    description:
+      `!setbirthdayformat <format> - set birthday date format. Formats: ${DATE_FORMATS.join(', ')} (ManageGuild).`,
+    category: 'Birthdays',
+    adminOnly: true
+  });
 
   client.on('messageCreate', async (message) => {
     try {

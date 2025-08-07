@@ -65,13 +65,27 @@ async function explainBanQuery(client, message) {
 }
 
 function register(client, commands) {
-  commands.set('!ban', '`!ban <@user|userId> [reason]` - Ban a user and record the reason.');
-  commands.set('!unban', '`!unban <userId>` - Remove a ban and unban the user.');
-  commands.set('!kick', '`!kick <@user|userId> [reason]` - Kick a user from the guild.');
-  commands.set(
-    '!banexplain',
-    '`!banexplain` - *Admin only.* Show MongoDB query stats for the ban collection.'
-  );
+  commands.set('!ban', {
+    description: '`!ban <@user|userId> [reason]` - Ban a user and record the reason.',
+    category: 'Moderation',
+    adminOnly: true
+  });
+  commands.set('!unban', {
+    description: '`!unban <userId>` - Remove a ban and unban the user.',
+    category: 'Moderation',
+    adminOnly: true
+  });
+  commands.set('!kick', {
+    description: '`!kick <@user|userId> [reason]` - Kick a user from the guild.',
+    category: 'Moderation',
+    adminOnly: true
+  });
+  commands.set('!banexplain', {
+    description:
+      '`!banexplain` - *Admin only.* Show MongoDB query stats for the ban collection.',
+    category: 'Moderation',
+    adminOnly: true
+  });
 
   client.on('messageCreate', async (message) => {
     try {
