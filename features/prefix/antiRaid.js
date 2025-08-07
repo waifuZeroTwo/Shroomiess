@@ -12,6 +12,88 @@ const recentHashes = new Map();
 const userInfractions = new Map();
 const guildEventTimestamps = new Map();
 const lockedGuilds = new Set();
+const pendingVerifications = new Map();
+
+function generateChallenge(settings) {
+  if (settings.verifyQuestion) {
+    return settings.verifyQuestion;
+  }
+  const a = Math.floor(Math.random() * 10) + 1;
+  const b = Math.floor(Math.random() * 10) + 1;
+  return { question: `What is ${a} + ${b}?`, answer: String(a + b) };
+}
+
+async function startVerification(member, settings) {
+  try {
+    const { question, answer } = generateChallenge(settings);
+    pendingVerifications.set(member.id, {
+      guildId: member.guild.id,
+      question,
+      answer: answer.toLowerCase()
+    });
+    try {
+      await member.send(`Please answer the following to verify: ${question}`);
+    } catch (_) {}
+    const unverifiedRole = member.guild.roles.cache.find(
+      (r) => r.name.toLowerCase() === 'unverified'
+    );
+    if (unverifiedRole && !member.roles.cache.has(unverifiedRole.id)) {
+      try {
+        await member.roles.add(unverifiedRole);
+      } catch (_) {}
+    }
+    await logAntiRaidEvent(member.guild.id, 'verifyChallenge', {
+      userId: member.id,
+      question
+    });
+  } catch (_) {}
+}
+
+async function handleVerifyMessage(message) {
+  if (message.author.bot || message.guild) return;
+  const pending = pendingVerifications.get(message.author.id);
+  if (!pending) return;
+  const content = (message.content || '').trim();
+  await logAntiRaidEvent(pending.guildId, 'verifyAttempt', {
+    userId: message.author.id,
+    answer: content
+  });
+  if (content.toLowerCase() === pending.answer) {
+    pendingVerifications.delete(message.author.id);
+    const guild = message.client.guilds.cache.get(pending.guildId);
+    const member = await guild?.members
+      .fetch(message.author.id)
+      .catch(() => null);
+    if (member) {
+      const memberRole = guild.roles.cache.find(
+        (r) => r.name.toLowerCase() === 'member'
+      );
+      const unverifiedRole = guild.roles.cache.find(
+        (r) => r.name.toLowerCase() === 'unverified'
+      );
+      if (memberRole) {
+        try {
+          await member.roles.add(memberRole);
+        } catch (_) {}
+      }
+      if (unverifiedRole) {
+        try {
+          await member.roles.remove(unverifiedRole);
+        } catch (_) {}
+      }
+    }
+    await message.reply('Verification successful! You now have access.').catch(() => {});
+    await logAntiRaidEvent(pending.guildId, 'verifySuccess', {
+      userId: message.author.id
+    });
+  } else {
+    await message.reply('Incorrect answer. Please try again.').catch(() => {});
+    await logAntiRaidEvent(pending.guildId, 'verifyFailure', {
+      userId: message.author.id,
+      answer: content
+    });
+  }
+}
 
 async function lockdownGuild(guild, count) {
   lockedGuilds.add(guild.id);
@@ -102,6 +184,7 @@ async function handleGuildMemberAdd(member) {
       memberJoinTimes.set(guildId, guildMap);
     }
     guildMap.set(member.id, now);
+    await startVerification(member, settings);
   } catch (err) {
     console.error('antiRaid guildMemberAdd error:', err);
   }
@@ -202,6 +285,7 @@ async function handleMessage(message) {
 function register(client) {
   client.on('guildMemberAdd', handleGuildMemberAdd);
   client.on('messageCreate', handleMessage);
+  client.on('messageCreate', handleVerifyMessage);
 }
 
-module.exports = { register };
+module.exports = { register, startVerification, pendingVerifications };
