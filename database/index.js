@@ -8,6 +8,7 @@ let client;
 let bans;
 let warnings;
 let mutes;
+let guildSettings;
 
 function ensureBans() {
   if (!bans) {
@@ -30,6 +31,13 @@ function ensureMutes() {
   }
 }
 
+function ensureGuildSettings() {
+  if (!guildSettings) {
+    console.warn('GuildSettings collection is not initialized. Call init() first.');
+    throw new Error('Database not initialized');
+  }
+}
+
 async function init() {
   const mongoUri = process.env.MONGODB_URI;
   if (!mongoUri) {
@@ -43,6 +51,7 @@ async function init() {
     bans = db.collection('ban');
     warnings = db.collection('warnings');
     mutes = db.collection('mutes');
+    guildSettings = db.collection('guildSettings');
     console.log('Connected to MongoDB');
   } catch (err) {
     console.error('MongoDB connection error:', err);
@@ -109,6 +118,21 @@ async function getActiveMutes() {
   return await mutes.find({ expiresAt: { $gt: new Date() } }).toArray();
 }
 
+async function setModLogChannel(guildId, channelId) {
+  ensureGuildSettings();
+  await guildSettings.updateOne(
+    { guildId },
+    { $set: { guildId, modLogChannelId: channelId } },
+    { upsert: true }
+  );
+}
+
+async function getModLogChannel(guildId) {
+  ensureGuildSettings();
+  const doc = await guildSettings.findOne({ guildId });
+  return doc ? doc.modLogChannelId : null;
+}
+
 async function close() {
   await client.close();
 }
@@ -126,5 +150,7 @@ module.exports = {
   addMute,
   removeMute,
   getActiveMutes,
+  setModLogChannel,
+  getModLogChannel,
   close
 };
