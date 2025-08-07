@@ -307,6 +307,21 @@ async function incrementBalance(guildId, userId, amount) {
   return updateResult.value.balance;
 }
 
+async function getLastWorkTimestamp(guildId, userId) {
+  ensureEconomy();
+  const doc = await economy.findOne({ guildId, userId });
+  return doc ? doc.lastWork || null : null;
+}
+
+async function setLastWorkTimestamp(guildId, userId, timestamp = new Date()) {
+  ensureEconomy();
+  await economy.updateOne(
+    { guildId, userId },
+    { $set: { lastWork: timestamp }, $setOnInsert: { balance: 0 } },
+    { upsert: true }
+  );
+}
+
 async function close() {
   await client.close();
 }
@@ -341,6 +356,8 @@ module.exports = {
   addBadge,
   getBalance,
   incrementBalance,
+  getLastWorkTimestamp,
+  setLastWorkTimestamp,
   close,
   // anti-raid helpers
   ...antiRaidHelpers
