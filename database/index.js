@@ -12,6 +12,8 @@ let guildSettings;
 let birthdays;
 let reputations;
 let repTransactions;
+// Anti-raid collections
+const antiRaid = require('./antiRaid');
 
 const DEFAULT_BIRTHDAY_FORMAT = 'YYYY-MM-DD';
 
@@ -81,6 +83,8 @@ async function init() {
     birthdays = db.collection('birthdays');
     reputations = db.collection('reputations');
     repTransactions = db.collection('repTransactions');
+    // initialize anti-raid collections
+    antiRaid.init(db);
     console.log('Connected to MongoDB');
   } catch (err) {
     console.error('MongoDB connection error:', err);
@@ -309,5 +313,7 @@ module.exports = {
   getReputation,
   getLastRepTimestamp,
   addBadge,
-  close
+  close,
+  // anti-raid helpers
+  ...antiRaid
 };
