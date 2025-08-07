@@ -28,8 +28,9 @@ be set and exposes a `testMongoConnection()` function that pings the database.
 ## Commands
 
 - `!ping` – basic ping.
-- `!ban @user [reason]` – bans the mentioned user and records the ban in the database.
-- `!unban <userId>` – removes a ban and unbans the user by ID.
+- `!help` – list available commands.
+- `!ban @user [reason]` – bans the mentioned user and records the ban in the database. Requires the moderation feature and appropriate permissions.
+- `!unban <userId>` – removes a ban and unbans the user by ID. Requires the moderation feature and appropriate permissions.
 - `!banExplain` – displays MongoDB execution stats for the ban collection. Restricted to administrators and useful for diagnosing indexing issues.
 
 The bot re-applies active bans from the database on startup.
