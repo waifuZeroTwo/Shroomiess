@@ -173,7 +173,37 @@ function register(client, commands) {
             return tsB - tsA;
           })[0];
           const filePath = path.join(logsDir, latest);
-          await message.channel.send({ files: [filePath] });
+
+          let log;
+          try {
+            const raw = fs.readFileSync(filePath, 'utf8');
+            log = JSON.parse(raw);
+            if (!Array.isArray(log)) throw new Error('Malformed log');
+          } catch (err) {
+            return message.reply('Log file is missing or malformed.');
+          }
+
+          const lines = [];
+          for (const entry of log) {
+            const user = await client.users.fetch(entry.id).catch(() => null);
+            const tag = user ? user.tag : 'Unknown#0000';
+            const role = entry.from === 'admin' ? 'Admin' : 'User';
+            lines.push(`**${role} (${tag})**: ${entry.content}`);
+          }
+
+          const chunks = [];
+          let current = '';
+          for (const line of lines) {
+            if (current.length + line.length + 1 > 4096) {
+              chunks.push(current);
+              current = '';
+            }
+            current += (current ? '\n' : '') + line;
+          }
+          if (current) chunks.push(current);
+
+          const embeds = chunks.map((c) => new EmbedBuilder().setDescription(c));
+          await message.channel.send({ embeds, files: [filePath] });
         } catch (err) {
           return message.reply('No ticket log exists for that user.');
         }
