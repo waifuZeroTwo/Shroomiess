@@ -83,14 +83,15 @@ client.once('ready', async () => {
     if (process.env.NODE_ENV === 'production') {
       await rest.put(Routes.applicationCommands(client.user.id), { body: payloads });
       console.log('Registered global slash commands');
-    } else if (guildId) {
-      await rest.put(
-        Routes.applicationGuildCommands(client.user.id, guildId),
-        { body: payloads }
-      );
-      console.log(`Registered guild slash commands for ${guildId}`);
     } else {
-      console.warn('GUILD_ID not set; skipping slash command registration');
+      const guildIds = guildId ? [guildId] : client.guilds.cache.map(g => g.id);
+      for (const id of guildIds) {
+        await rest.put(
+          Routes.applicationGuildCommands(client.user.id, id),
+          { body: payloads }
+        );
+        console.log(`Registered guild slash commands for ${id}`);
+      }
     }
   } catch (err) {
     console.error('Failed to register application commands:', err);
