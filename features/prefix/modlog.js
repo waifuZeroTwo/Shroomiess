@@ -1,5 +1,5 @@
 const { EmbedBuilder, PermissionsBitField } = require('discord.js');
-const { setModLogChannel, getModLogChannel } = require('../database');
+const { setModLogChannel, getModLogChannel } = require('../../database');
 
 function register(client, commands) {
   commands.set('!setmodlog', {

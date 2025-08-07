@@ -1,4 +1,4 @@
-const { addBan, removeBan, getBanCollection, getActiveBans } = require('../database');
+const { addBan, removeBan, getBanCollection, getActiveBans } = require('../../database');
 const { PermissionsBitField } = require('discord.js');
 
 /**

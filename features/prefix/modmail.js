@@ -171,7 +171,7 @@ function register(client, commands) {
           return message.reply('Provide a user ID to fetch logs for.');
         }
 
-        const logsDir = path.join(__dirname, '..', 'ticket_logs');
+        const logsDir = path.join(__dirname, '..', '..', 'ticket_logs');
         try {
           const files = fs
             .readdirSync(logsDir)
@@ -273,7 +273,7 @@ function register(client, commands) {
         } else {
           const user = await client.users.fetch(userId);
           await user.send('Your ticket has been closed.');
-          const logsDir = path.join(__dirname, '..', 'ticket_logs');
+          const logsDir = path.join(__dirname, '..', '..', 'ticket_logs');
           fs.mkdirSync(logsDir, { recursive: true });
           const filePath = path.join(logsDir, `${userId}-${Date.now()}.json`);
           await fs.promises.writeFile(

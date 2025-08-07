@@ -8,14 +8,25 @@ const db = require('./database');
 process.on('unhandledRejection', err => console.error('Unhandled promise rejection:', err));
 process.on('uncaughtException', err => console.error('Uncaught exception:', err));
 
-// Dynamically load features
-const features = {};
-const featuresPath = path.join(__dirname, 'features');
-if (fs.existsSync(featuresPath)) {
-  for (const file of fs.readdirSync(featuresPath)) {
+// Dynamically load legacy prefix and slash command features
+const prefixFeatures = {};
+const prefixPath = path.join(__dirname, 'features', 'prefix');
+if (fs.existsSync(prefixPath)) {
+  for (const file of fs.readdirSync(prefixPath)) {
     if (file.endsWith('.js')) {
       const name = path.basename(file, '.js');
-      features[name] = require(path.join(featuresPath, file));
+      prefixFeatures[name] = require(path.join(prefixPath, file));
+    }
+  }
+}
+
+const slashFeatures = {};
+const slashPath = path.join(__dirname, 'features', 'slash');
+if (fs.existsSync(slashPath)) {
+  for (const file of fs.readdirSync(slashPath)) {
+    if (file.endsWith('.js')) {
+      const name = path.basename(file, '.js');
+      slashFeatures[name] = require(path.join(slashPath, file));
     }
   }
 }
@@ -39,12 +50,21 @@ const client = new Client({
   ]
 });
 
-client.features = features;
+client.prefixFeatures = prefixFeatures;
+client.slashFeatures = slashFeatures;
+client.features = prefixFeatures;
 
 // Allow each feature to register itself
-for (const feature of Object.values(features)) {
+for (const feature of Object.values(prefixFeatures)) {
   if (typeof feature.register === 'function') {
     feature.register(client, commands);
+  }
+}
+
+// Allow slash features to register themselves
+for (const feature of Object.values(slashFeatures)) {
+  if (typeof feature.registerSlash === 'function') {
+    feature.registerSlash(client);
   }
 }
 

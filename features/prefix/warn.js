@@ -1,4 +1,4 @@
-const { addWarning, listWarnings } = require('../database');
+const { addWarning, listWarnings } = require('../../database');
 
 function register(client, commands) {
   commands.set('!warn', {
