@@ -70,8 +70,24 @@ function register(client, commands) {
         embed.addFields({ name: 'User', value: `<@${data.userId}>`, inline: true });
       if (data.moderatorId)
         embed.addFields({ name: 'Moderator', value: `<@${data.moderatorId}>`, inline: true });
+      if (data.fromUserId)
+        embed.addFields({ name: 'Giver', value: `<@${data.fromUserId}>`, inline: true });
+      if (data.toUserId)
+        embed.addFields({ name: 'Receiver', value: `<@${data.toUserId}>`, inline: true });
       if (data.duration)
         embed.addFields({ name: 'Duration', value: String(data.duration), inline: true });
+      if (data.giverTotal !== undefined)
+        embed.addFields({
+          name: 'Giver Total',
+          value: String(data.giverTotal),
+          inline: true
+        });
+      if (data.receiverTotal !== undefined)
+        embed.addFields({
+          name: 'Receiver Total',
+          value: String(data.receiverTotal),
+          inline: true
+        });
       if (data.reason) embed.addFields({ name: 'Reason', value: data.reason });
 
       await channel.send({ embeds: [embed] });
@@ -85,6 +101,9 @@ function register(client, commands) {
   client.on('kick', (data) => sendLog(data.guildId, 'Kick', data));
   client.on('mute', (data) => sendLog(data.guildId, 'Mute', data));
   client.on('warn', (data) => sendLog(data.guildId, 'Warn', data));
+  client.on('reputation', (data) =>
+    sendLog(data.guildId, 'Reputation', data)
+  );
 
   // Log modmail ticket opens and cancellations
   client.on('modmail', (data) =>
