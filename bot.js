@@ -1,5 +1,5 @@
 require('dotenv').config();
-const { Client, GatewayIntentBits, Collection, Partials, PermissionsBitField } = require('discord.js');
+const { Client, GatewayIntentBits, Partials } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
 const db = require('./database');
@@ -21,13 +21,8 @@ if (fs.existsSync(featuresPath)) {
 }
 const moderation = features.moderation;
 
-// Command descriptions used for help text
-const commandDescriptions = {
-  '!ping': '`!ping` - Check bot responsiveness.',
-  '!ban': '`!ban <@user|userId> [reason]` - Ban a user and record the reason.',
-  '!unban': '`!unban <userId>` - Remove a ban and unban the user.',
-  '!banexplain': '`!banexplain` - *Admin only.* Show MongoDB query stats for the ban collection.'
-};
+// Shared command map for help text
+const commands = new Map();
 
 // Create Discord client with desired intents
 const client = new Client({
@@ -39,8 +34,14 @@ const client = new Client({
   partials: [Partials.Channel]
 });
 
-client.commands = new Collection();
 client.features = features;
+
+// Allow each feature to register itself
+for (const feature of Object.values(features)) {
+  if (typeof feature.register === 'function') {
+    feature.register(client, commands);
+  }
+}
 
 client.once('ready', async () => {
   console.log(`Logged in as ${client.user.tag}`);
@@ -63,74 +64,6 @@ client.once('ready', async () => {
       } catch (err) {
         console.warn('Database unavailable; skipping ban enforcement.', err);
       }
-    }
-  }
-});
-
-client.on('messageCreate', async (message) => {
-  try {
-    if (message.author.bot) return;
-    if (!message.content.startsWith('!')) return;
-
-    const args = message.content.trim().split(/\s+/);
-    const command = args.shift().toLowerCase();
-
-    if (command === '!ping') {
-      return message.reply('Pong!');
-    }
-
-    if (command === '!help') {
-      const lines = ['**Available Commands**'];
-      for (const [cmd, desc] of Object.entries(commandDescriptions)) {
-        if (!moderation && ['!ban', '!unban', '!banexplain'].includes(cmd)) continue;
-        lines.push(desc);
-      }
-      return message.channel.send(lines.join('\n'));
-    }
-
-    if (command === '!ban' && moderation) {
-      const user = message.mentions.users.first();
-      const userId = user ? user.id : args[0];
-      if (!userId) return message.reply('Provide a user mention or ID to ban.');
-      const reason = args.slice(1).join(' ') || 'No reason provided';
-      try {
-        await moderation.banUser(client, message.guild.id, userId, reason);
-        return message.reply(`Banned ${user ? user.tag : userId}`);
-      } catch (err) {
-        console.error('Ban failed:', err);
-        return message.reply('Failed to ban user.');
-      }
-    }
-
-    if (command === '!unban' && moderation) {
-      const userId = args[0];
-      if (!userId) return message.reply('Please provide a user ID to unban.');
-      try {
-        await moderation.unbanUser(client, message.guild.id, userId);
-        return message.reply(`Unbanned <@${userId}>`);
-      } catch (err) {
-        console.error('Unban failed:', err);
-        return message.reply('Failed to unban user.');
-      }
-    }
-
-    if (command === '!banexplain' && moderation) {
-      if (!message.member?.permissions.has(PermissionsBitField.Flags.Administrator)) {
-        return message.reply('This command is restricted to administrators.');
-      }
-      try {
-        await moderation.explainBanQuery(client, message);
-      } catch (err) {
-        console.error('Explain failed:', err);
-        return message.reply('Failed to retrieve query stats.');
-      }
-    }
-  } catch (err) {
-    console.error('Error handling message:', err);
-    try {
-      await message.reply('An error occurred while processing your command.');
-    } catch (replyErr) {
-      console.error('Failed to send error reply:', replyErr);
     }
   }
 });
