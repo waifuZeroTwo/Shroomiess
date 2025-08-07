@@ -64,6 +64,10 @@ function register(client, commands) {
           toUserId: user.id,
           reason
         });
+        const giverRep = await getReputation(
+          message.guild.id,
+          message.author.id
+        );
 
         let newBadge = null;
         for (const { name, points } of BADGE_THRESHOLDS) {
@@ -96,7 +100,9 @@ function register(client, commands) {
           guildId: message.guild.id,
           fromUserId: message.author.id,
           toUserId: user.id,
-          reason
+          reason,
+          giverTotal: giverRep.points,
+          receiverTotal: rep.points
         });
       }
 

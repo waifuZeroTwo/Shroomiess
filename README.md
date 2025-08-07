@@ -35,6 +35,13 @@ be set and exposes a `testMongoConnection()` function that pings the database.
 
 The bot re-applies active bans from the database on startup.
 
+## Mod-Log
+
+Use `!setmodlog #channel` to choose a channel for moderation logs. The bot records
+bans, unbans, kicks, mutes, warns, modmail ticket updates, and reputation
+transactions. Reputation entries show the giver, receiver, reason, and each
+user's new totals.
+
 ## Running
 
 Install dependencies and start the bot:
