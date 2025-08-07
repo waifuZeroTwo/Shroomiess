@@ -7,6 +7,7 @@ const dbName =
 let client;
 let bans;
 let warnings;
+let mutes;
 
 function ensureBans() {
   if (!bans) {
@@ -18,6 +19,13 @@ function ensureBans() {
 function ensureWarnings() {
   if (!warnings) {
     console.warn('Warnings collection is not initialized. Call init() first.');
+    throw new Error('Database not initialized');
+  }
+}
+
+function ensureMutes() {
+  if (!mutes) {
+    console.warn('Mutes collection is not initialized. Call init() first.');
     throw new Error('Database not initialized');
   }
 }
@@ -34,6 +42,7 @@ async function init() {
     const db = client.db(dbName);
     bans = db.collection('ban');
     warnings = db.collection('warnings');
+    mutes = db.collection('mutes');
     console.log('Connected to MongoDB');
   } catch (err) {
     console.error('MongoDB connection error:', err);
@@ -84,6 +93,22 @@ function clearWarnings(guildId, userId) {
   return warnings.deleteMany({ guildId, userId });
 }
 
+async function addMute(data) {
+  ensureMutes();
+  const { userId, guildId } = data;
+  await mutes.updateOne({ userId, guildId }, { $set: data }, { upsert: true });
+}
+
+function removeMute(guildId, userId) {
+  ensureMutes();
+  return mutes.deleteOne({ userId, guildId });
+}
+
+async function getActiveMutes() {
+  ensureMutes();
+  return await mutes.find({ expiresAt: { $gt: new Date() } }).toArray();
+}
+
 async function close() {
   await client.close();
 }
@@ -98,5 +123,8 @@ module.exports = {
   addWarning,
   listWarnings,
   clearWarnings,
+  addMute,
+  removeMute,
+  getActiveMutes,
   close
 };
