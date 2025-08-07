@@ -35,6 +35,25 @@ be set and exposes a `testMongoConnection()` function that pings the database.
 
 The bot re-applies active bans from the database on startup.
 
+## Reputation
+
+Recognize helpful users with the reputation system.
+
+- `!rep @User <reason>` – award a reputation point. Example: `!rep @User Thanks for the help!`
+- `!reputation [@User]` – show a user's reputation and badges. Example: `!reputation @User`
+
+You can only award reputation to the same user once every 24 hours.
+
+### Badges
+
+Users earn badges as their reputation grows:
+
+- 10 points – Bronze
+- 50 points – Silver
+- 100 points – Gold
+
+Reputation transactions are logged to the moderation log channel if configured.
+
 ## Mod-Log
 
 Use `!setmodlog #channel` to choose a channel for moderation logs. The bot records
