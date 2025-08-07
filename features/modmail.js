@@ -17,6 +17,10 @@ function register(client, commands) {
   commands.set('!claim', '`!claim` - Claim a modmail ticket.');
   commands.set('!unclaim', '`!unclaim` - Unclaim the current ticket.');
   commands.set('!close', '`!close` - Close the current ticket (assigned admin only).');
+  commands.set(
+    '!ticketlog',
+    '`!ticketlog <userId>` - Send the latest modmail log for a user.'
+  );
 
   // DM listener - open tickets and forward user messages
   client.on('messageCreate', async (message) => {
@@ -119,14 +123,63 @@ function register(client, commands) {
         ]
       });
 
-      client.emit('modmail', {
-        guildId: MAIN_GUILD_ID,
-        userId: message.author.id,
-        action: 'Opened',
-        channelId: channel.id
-      });
+  client.emit('modmail', {
+    guildId: MAIN_GUILD_ID,
+    userId: message.author.id,
+    action: 'Opened',
+    channelId: channel.id
+  });
     } catch (err) {
       console.error('Error handling modmail:', err);
+    }
+  });
+
+  // Guild command listener - fetch ticket logs
+  client.on('messageCreate', async (message) => {
+    try {
+      if (message.author.bot) return;
+      if (!message.guild) return;
+      if (!message.content.startsWith('!')) return;
+
+      const args = message.content.trim().split(/\s+/);
+      const command = args.shift().toLowerCase();
+
+      if (command === '!ticketlog') {
+        if (
+          !message.member?.permissions.has(
+            PermissionsBitField.Flags.ManageGuild
+          )
+        ) {
+          return message.reply('You do not have permission to use this command.');
+        }
+
+        const targetId = args.shift();
+        if (!targetId) {
+          return message.reply('Provide a user ID to fetch logs for.');
+        }
+
+        const logsDir = path.join(__dirname, '..', 'ticket_logs');
+        try {
+          const files = fs
+            .readdirSync(logsDir)
+            .filter((f) => f.startsWith(`${targetId}-`));
+          if (!files.length) {
+            return message.reply('No ticket log exists for that user.');
+          }
+
+          const latest = files.sort((a, b) => {
+            const tsA = parseInt(a.split('-')[1], 10);
+            const tsB = parseInt(b.split('-')[1], 10);
+            return tsB - tsA;
+          })[0];
+          const filePath = path.join(logsDir, latest);
+          await message.channel.send({ files: [filePath] });
+        } catch (err) {
+          return message.reply('No ticket log exists for that user.');
+        }
+      }
+    } catch (err) {
+      console.error('Error handling ticket log command:', err);
     }
   });
 
@@ -135,6 +188,7 @@ function register(client, commands) {
     try {
       if (message.author.bot) return;
       if (!message.guild) return;
+      if (message.content.trim().toLowerCase().startsWith('!ticketlog')) return;
 
       let userId = null;
       for (const [uid, ticket] of activeTickets.entries()) {
