@@ -44,13 +44,6 @@ async function registerSlash(client) {
     });
   }
 
-  try {
-    await client.application.commands.create(rep.toJSON());
-    await client.application.commands.create(reputation.toJSON());
-  } catch (err) {
-    console.error('Failed to register reputation slash commands:', err);
-  }
-
   client.on('interactionCreate', async (interaction) => {
     try {
       if (!interaction.isChatInputCommand()) return;
@@ -129,6 +122,8 @@ async function registerSlash(client) {
       console.error('Error handling reputation slash command:', err);
     }
   });
+
+  return [rep.toJSON(), reputation.toJSON()];
 }
 
 module.exports = { registerSlash };

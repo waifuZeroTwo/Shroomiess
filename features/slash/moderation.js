@@ -57,15 +57,6 @@ async function registerSlash(client) {
     });
   }
 
-  try {
-    await client.application.commands.create(ban.toJSON());
-    await client.application.commands.create(kick.toJSON());
-    await client.application.commands.create(unban.toJSON());
-    await client.application.commands.create(banexplain.toJSON());
-  } catch (err) {
-    console.error('Failed to register moderation slash commands:', err);
-  }
-
   client.on('interactionCreate', async (interaction) => {
     try {
       if (!interaction.isChatInputCommand()) return;
@@ -120,6 +111,8 @@ async function registerSlash(client) {
       console.error('Error handling moderation slash command:', err);
     }
   });
+
+  return [ban.toJSON(), kick.toJSON(), unban.toJSON(), banexplain.toJSON()];
 }
 
 module.exports = { registerSlash };

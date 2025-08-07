@@ -46,15 +46,6 @@ async function registerSlash(client) {
     });
   }
 
-  try {
-    await client.application.commands.create(claim.toJSON());
-    await client.application.commands.create(unclaim.toJSON());
-    await client.application.commands.create(close.toJSON());
-    await client.application.commands.create(ticketlog.toJSON());
-  } catch (err) {
-    console.error('Failed to register modmail slash commands:', err);
-  }
-
   client.on('interactionCreate', async (interaction) => {
     try {
       if (!interaction.isChatInputCommand()) return;
@@ -159,6 +150,8 @@ async function registerSlash(client) {
       console.error('Error handling modmail slash command:', err);
     }
   });
+
+  return [claim.toJSON(), unclaim.toJSON(), close.toJSON(), ticketlog.toJSON()];
 }
 
 module.exports = { registerSlash };
