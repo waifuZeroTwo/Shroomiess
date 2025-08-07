@@ -1,4 +1,4 @@
-const { addBan, removeBan, getBanCollection } = require('../database');
+const { addBan, removeBan, getBanCollection, getActiveBans } = require('../database');
 const { PermissionsBitField } = require('discord.js');
 
 /**
@@ -67,7 +67,10 @@ async function explainBanQuery(client, message) {
 function register(client, commands) {
   commands.set('!ban', '`!ban <@user|userId> [reason]` - Ban a user and record the reason.');
   commands.set('!unban', '`!unban <userId>` - Remove a ban and unban the user.');
-  commands.set('!banexplain', '`!banexplain` - *Admin only.* Show MongoDB query stats for the ban collection.');
+  commands.set(
+    '!banexplain',
+    '`!banexplain` - *Admin only.* Show MongoDB query stats for the ban collection.'
+  );
 
   client.on('messageCreate', async (message) => {
     try {
@@ -123,6 +126,22 @@ function register(client, commands) {
       }
     }
   });
+
+  client.on('ready', async () => {
+    try {
+      const bans = await getActiveBans();
+      for (const ban of bans) {
+        try {
+          const guild = await client.guilds.fetch(ban.guildId);
+          await guild.members.ban(ban.userId, { reason: ban.reason });
+        } catch (err) {
+          console.error(`Failed to enforce ban for ${ban.userId}`, err);
+        }
+      }
+    } catch (err) {
+      console.warn('Database unavailable; skipping ban enforcement.', err);
+    }
+  });
 }
 
-module.exports = { register, banUser, unbanUser, explainBanQuery };
+module.exports = { register };
