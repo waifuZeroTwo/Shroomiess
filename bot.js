@@ -23,6 +23,7 @@ if (fs.existsSync(featuresPath)) {
 const commands = new Map();
 
 // Create Discord client with desired intents
+// Include DM intents and partials so features like modmail work in DMs
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
@@ -31,7 +32,11 @@ const client = new Client({
     GatewayIntentBits.DirectMessages,
     GatewayIntentBits.DirectMessageReactions
   ],
-  partials: [Partials.Channel, Partials.Message, Partials.Reaction]
+  partials: [
+    Partials.Channel,
+    Partials.Message,
+    Partials.Reaction
+  ]
 });
 
 client.features = features;
