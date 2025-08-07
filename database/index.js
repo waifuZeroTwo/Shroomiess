@@ -1,5 +1,9 @@
 const { MongoClient } = require('mongodb');
 
+const url = new URL(process.env.MONGODB_URI);
+const dbName =
+  process.env.MONGODB_DB || url.pathname.replace(/^\//, '') || 'Discord_Bot';
+
 let client;
 let bans;
 
@@ -19,7 +23,7 @@ async function init() {
   client = new MongoClient(mongoUri);
   try {
     await client.connect();
-    const db = client.db('Discord_Bot');
+    const db = client.db(dbName);
     bans = db.collection('ban');
     console.log('Connected to MongoDB');
   } catch (err) {

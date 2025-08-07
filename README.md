@@ -9,10 +9,14 @@ Create a `.env` file with the following values:
 ```
 DISCORD_BOT_TOKEN=your_bot_token
 MONGODB_URI=your_mongodb_connection_string
+MONGODB_DB=your_application_database_name
 DB_PASSWORD=your_mongodb_user_password
 ```
 
-The bot connects to MongoDB to store active bans.
+The URI should include any authentication options, such as `authSource=admin`,
+which specifies where credentials are verified. `MONGODB_DB` (or the database
+named in the URI path) selects the database the bot uses to store its data. The
+bot connects to MongoDB to store active bans.
 
 ### MongoDB Connections
 
