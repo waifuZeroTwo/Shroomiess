@@ -88,6 +88,16 @@ function register(client, commands) {
           value: String(data.receiverTotal),
           inline: true
         });
+      if (data.count !== undefined)
+        embed.addFields({ name: 'Count', value: String(data.count), inline: true });
+      if (data.joins !== undefined)
+        embed.addFields({ name: 'Joins', value: String(data.joins), inline: true });
+      if (data.spamMsgs !== undefined)
+        embed.addFields({ name: 'Spam Msgs', value: String(data.spamMsgs), inline: true });
+      if (data.rule)
+        embed.addFields({ name: 'Rule', value: data.rule, inline: true });
+      if (data.response)
+        embed.addFields({ name: 'Response', value: data.response, inline: true });
       if (data.reason) embed.addFields({ name: 'Reason', value: data.reason });
 
       await channel.send({ embeds: [embed] });
@@ -108,6 +118,44 @@ function register(client, commands) {
   // Log modmail ticket opens and cancellations
   client.on('modmail', (data) =>
     sendLog(data.guildId, `Modmail ${data.action}`, data)
+  );
+
+  client.on('antiRaidSummary', (data) =>
+    sendLog(data.guildId, 'Anti-raid Summary', {
+      joins: data.joins,
+      spamMsgs: data.spamMsgs
+    })
+  );
+  client.on('antiRaidJoinSpike', (data) =>
+    sendLog(data.guild.id, 'Anti-raid Join Spike', {
+      count: data.count,
+      rule: 'joinThreshold'
+    })
+  );
+  client.on('antiRaidSpamDetected', (data) =>
+    sendLog(data.guild.id, 'Anti-raid Spam Detected', {
+      userId: data.user?.id,
+      count: data.count,
+      rule: 'msgThreshold'
+    })
+  );
+  client.on('antiRaidLockdown', (data) =>
+    sendLog(data.guild.id, 'Anti-raid Lockdown', {
+      count: data.count,
+      rule: 'lockdownThreshold'
+    })
+  );
+  client.on('antiRaidShadowMute', (data) =>
+    sendLog(data.guild.id, 'Anti-raid Shadow Mute', {
+      userId: data.user.id,
+      rule: 'shadowMuteThreshold'
+    })
+  );
+  client.on('antiRaidQuarantine', (data) =>
+    sendLog(data.guild.id, 'Anti-raid Quarantine', {
+      userId: data.user.id,
+      rule: 'quarantineThreshold'
+    })
   );
 }
 
