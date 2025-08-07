@@ -35,25 +35,65 @@ function register(client, commands) {
         const embeds = [];
 
         if (userCategories.size) {
-          const embed = new EmbedBuilder()
+          let embed = new EmbedBuilder()
             .setTitle('Available Commands')
             .setColor(randomColor());
+          let fieldCount = 0;
+          const addField = (name, value) => {
+            if (fieldCount === 25) {
+              embeds.push(embed);
+              embed = new EmbedBuilder()
+                .setTitle('Available Commands')
+                .setColor(randomColor());
+              fieldCount = 0;
+            }
+            embed.addFields({ name, value });
+            fieldCount++;
+          };
           for (const [cat, lines] of userCategories) {
             const name = `${categoryEmojis[cat] ?? ''} ${cat}`.trim();
-            embed.addFields({ name, value: lines.join('\n') });
+            let chunk = [];
+            for (const line of lines) {
+              if ([...chunk, line].join('\n').length > 1024) {
+                addField(name, chunk.join('\n'));
+                chunk = [];
+              }
+              chunk.push(line);
+            }
+            if (chunk.length) addField(name, chunk.join('\n'));
           }
-          embeds.push(embed);
+          if (fieldCount) embeds.push(embed);
         }
 
         if (adminCategories.size) {
-          const embed = new EmbedBuilder()
+          let embed = new EmbedBuilder()
             .setTitle('ADMIN ONLY')
             .setColor(randomColor());
+          let fieldCount = 0;
+          const addField = (name, value) => {
+            if (fieldCount === 25) {
+              embeds.push(embed);
+              embed = new EmbedBuilder()
+                .setTitle('ADMIN ONLY')
+                .setColor(randomColor());
+              fieldCount = 0;
+            }
+            embed.addFields({ name, value });
+            fieldCount++;
+          };
           for (const [cat, lines] of adminCategories) {
             const name = `${categoryEmojis[cat] ?? ''} ${cat}`.trim();
-            embed.addFields({ name, value: lines.join('\n') });
+            let chunk = [];
+            for (const line of lines) {
+              if ([...chunk, line].join('\n').length > 1024) {
+                addField(name, chunk.join('\n'));
+                chunk = [];
+              }
+              chunk.push(line);
+            }
+            if (chunk.length) addField(name, chunk.join('\n'));
           }
-          embeds.push(embed);
+          if (fieldCount) embeds.push(embed);
         }
 
         try {
