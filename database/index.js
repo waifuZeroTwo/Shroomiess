@@ -12,6 +12,7 @@ let guildSettings;
 let birthdays;
 let reputations;
 let repTransactions;
+let economy;
 // Anti-raid collections
 const antiRaid = require('./antiRaid');
 const { init: initAntiRaid, ...antiRaidHelpers } = antiRaid;
@@ -67,6 +68,13 @@ function ensureRepTransactions() {
   }
 }
 
+function ensureEconomy() {
+  if (!economy) {
+    console.warn('Economy collection is not initialized. Call init() first.');
+    throw new Error('Database not initialized');
+  }
+}
+
 async function init() {
   const mongoUri = process.env.MONGODB_URI;
   if (!mongoUri) {
@@ -84,6 +92,7 @@ async function init() {
     birthdays = db.collection('birthdays');
     reputations = db.collection('reputations');
     repTransactions = db.collection('repTransactions');
+    economy = db.collection('economy');
     // initialize anti-raid collections
     initAntiRaid(db); // must supply the db instance
     console.log('Connected to MongoDB');
@@ -282,6 +291,22 @@ async function addBadge(guildId, userId, badge) {
   );
 }
 
+async function getBalance(guildId, userId) {
+  ensureEconomy();
+  const doc = await economy.findOne({ guildId, userId });
+  return doc ? doc.balance || 0 : 0;
+}
+
+async function incrementBalance(guildId, userId, amount) {
+  ensureEconomy();
+  const updateResult = await economy.findOneAndUpdate(
+    { guildId, userId },
+    { $inc: { balance: amount } },
+    { upsert: true, returnDocument: 'after' }
+  );
+  return updateResult.value.balance;
+}
+
 async function close() {
   await client.close();
 }
@@ -314,6 +339,8 @@ module.exports = {
   getReputation,
   getLastRepTimestamp,
   addBadge,
+  getBalance,
+  incrementBalance,
   close,
   // anti-raid helpers
   ...antiRaidHelpers
