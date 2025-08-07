@@ -21,6 +21,14 @@ if (fs.existsSync(featuresPath)) {
 }
 const moderation = features.moderation;
 
+// Command descriptions used for help text
+const commandDescriptions = {
+  '!ping': '`!ping` - Check bot responsiveness.',
+  '!ban': '`!ban <@user|userId> [reason]` - Ban a user and record the reason.',
+  '!unban': '`!unban <userId>` - Remove a ban and unban the user.',
+  '!banexplain': '`!banexplain` - *Admin only.* Show MongoDB query stats for the ban collection.'
+};
+
 // Create Discord client with desired intents
 const client = new Client({
   intents: [
@@ -69,6 +77,15 @@ client.on('messageCreate', async (message) => {
 
     if (command === '!ping') {
       return message.reply('Pong!');
+    }
+
+    if (command === '!help') {
+      const lines = ['**Available Commands**'];
+      for (const [cmd, desc] of Object.entries(commandDescriptions)) {
+        if (!moderation && ['!ban', '!unban', '!banexplain'].includes(cmd)) continue;
+        lines.push(desc);
+      }
+      return message.channel.send(lines.join('\n'));
     }
 
     if (command === '!ban' && moderation) {
