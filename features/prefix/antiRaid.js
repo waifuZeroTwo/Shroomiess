@@ -1,13 +1,82 @@
 const crypto = require('crypto');
 const {
   getAntiRaidSettings,
-  logAntiRaidEvent
+  logAntiRaidEvent,
+  getModLogChannel
 } = require('../../database');
 
 const joinTimestamps = new Map();
 const memberJoinTimes = new Map();
 const messageTimestamps = new Map();
 const recentHashes = new Map();
+const userInfractions = new Map();
+const guildEventTimestamps = new Map();
+const lockedGuilds = new Set();
+
+async function lockdownGuild(guild, count) {
+  lockedGuilds.add(guild.id);
+  for (const channel of guild.channels.cache.values()) {
+    if (channel.isTextBased && channel.isTextBased()) {
+      try {
+        await channel.permissionOverwrites.edit(guild.roles.everyone, { SendMessages: false });
+      } catch (_) {}
+    }
+  }
+  try {
+    const modChannelId = await getModLogChannel(guild.id);
+    if (modChannelId) {
+      const modChannel = guild.channels.cache.get(modChannelId);
+      if (modChannel) {
+        await modChannel.send('Lockdown activated due to raid detection.');
+      }
+    }
+  } catch (_) {}
+  guild.client.emit('antiRaidLockdown', { guild, count });
+  await logAntiRaidEvent(guild.id, 'lockdown', { count });
+}
+
+async function trackEvent(guild, settings) {
+  const now = Date.now();
+  let arr = guildEventTimestamps.get(guild.id);
+  if (!arr) {
+    arr = [];
+    guildEventTimestamps.set(guild.id, arr);
+  }
+  arr.push(now);
+  while (arr.length && now - arr[0] > 60 * 1000) arr.shift();
+  if (!lockedGuilds.has(guild.id) && settings.lockdownThreshold && arr.length >= settings.lockdownThreshold) {
+    await lockdownGuild(guild, arr.length);
+  }
+}
+
+async function handleInfraction(guild, member, settings) {
+  if (!member) return;
+  let guildMap = userInfractions.get(guild.id);
+  if (!guildMap) {
+    guildMap = new Map();
+    userInfractions.set(guild.id, guildMap);
+  }
+  const count = (guildMap.get(member.id) || 0) + 1;
+  guildMap.set(member.id, count);
+
+  if (settings.muteRoleId && count >= (settings.shadowMuteThreshold || 1) && !member.roles.cache.has(settings.muteRoleId)) {
+    try {
+      await member.roles.add(settings.muteRoleId, 'Anti-raid shadow mute');
+    } catch (_) {}
+    guild.client.emit('antiRaidShadowMute', { guild, user: member.user });
+    await logAntiRaidEvent(guild.id, 'shadowMute', { userId: member.id });
+  }
+
+  if (settings.suspectRoleId && count >= (settings.quarantineThreshold || 3) && !member.roles.cache.has(settings.suspectRoleId)) {
+    try {
+      await member.roles.add(settings.suspectRoleId, 'Anti-raid quarantine');
+    } catch (_) {}
+    guild.client.emit('antiRaidQuarantine', { guild, user: member.user });
+    await logAntiRaidEvent(guild.id, 'quarantine', { userId: member.id });
+  }
+
+  await trackEvent(guild, settings);
+}
 
 async function handleGuildMemberAdd(member) {
   try {
@@ -25,6 +94,7 @@ async function handleGuildMemberAdd(member) {
     if (settings.joinThreshold && joins.length >= settings.joinThreshold.count) {
       member.client.emit('antiRaidJoinSpike', { guild: member.guild, count: joins.length });
       await logAntiRaidEvent(guildId, 'joinSpike', { count: joins.length });
+      await trackEvent(member.guild, settings);
     }
     let guildMap = memberJoinTimes.get(guildId);
     if (!guildMap) {
@@ -80,6 +150,7 @@ async function handleMessage(message) {
         userId: message.author.id,
         count: timestamps.length
       });
+      await handleInfraction(message.guild, message.member, settings);
     }
 
     const domains = extractDomains(message.content || '');
@@ -89,6 +160,7 @@ async function handleMessage(message) {
           userId: message.author.id,
           domain
         });
+        await handleInfraction(message.guild, message.member, settings);
         message.delete().catch(() => {});
         return;
       }
@@ -118,6 +190,7 @@ async function handleMessage(message) {
             hash,
             users: Array.from(entry.users)
           });
+          await handleInfraction(message.guild, message.member, settings);
         }
       }
     }

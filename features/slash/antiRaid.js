@@ -2,6 +2,11 @@ const { SlashCommandBuilder, PermissionsBitField } = require('discord.js');
 const {
   setJoinThreshold,
   setMsgThreshold,
+  setShadowMuteThreshold,
+  setQuarantineThreshold,
+  setLockdownThreshold,
+  setMuteRole,
+  setSuspectRole,
   addWhitelistDomain,
   removeWhitelistDomain,
   setVerifyQuestion
@@ -35,6 +40,36 @@ async function registerSlash(client) {
             .setDescription('Set message spam threshold')
             .addIntegerOption((opt) =>
               opt.setName('count').setDescription('Message count').setRequired(true)
+            )
+        )
+        .addSubcommand((sub) =>
+          sub
+            .setName('shadow-mute')
+            .setDescription('Set shadow mute threshold and role')
+            .addIntegerOption((opt) =>
+              opt.setName('count').setDescription('Infraction count').setRequired(true)
+            )
+            .addRoleOption((opt) =>
+              opt.setName('role').setDescription('Muted role').setRequired(true)
+            )
+        )
+        .addSubcommand((sub) =>
+          sub
+            .setName('quarantine')
+            .setDescription('Set quarantine threshold and role')
+            .addIntegerOption((opt) =>
+              opt.setName('count').setDescription('Infraction count').setRequired(true)
+            )
+            .addRoleOption((opt) =>
+              opt.setName('role').setDescription('Suspect role').setRequired(true)
+            )
+        )
+        .addSubcommand((sub) =>
+          sub
+            .setName('lockdown')
+            .setDescription('Set lockdown threshold (events per minute)')
+            .addIntegerOption((opt) =>
+              opt.setName('count').setDescription('Event count').setRequired(true)
             )
         )
     )
@@ -103,6 +138,22 @@ async function registerSlash(client) {
         const count = interaction.options.getInteger('count', true);
         await setMsgThreshold(guildId, count);
         await interaction.reply(`Message threshold set to ${count} messages/5s.`);
+      } else if (group === 'set' && sub === 'shadow-mute') {
+        const count = interaction.options.getInteger('count', true);
+        const role = interaction.options.getRole('role', true);
+        await setShadowMuteThreshold(guildId, count);
+        await setMuteRole(guildId, role.id);
+        await interaction.reply(`Shadow mute after ${count} infraction(s) using role ${role}.`);
+      } else if (group === 'set' && sub === 'quarantine') {
+        const count = interaction.options.getInteger('count', true);
+        const role = interaction.options.getRole('role', true);
+        await setQuarantineThreshold(guildId, count);
+        await setSuspectRole(guildId, role.id);
+        await interaction.reply(`Quarantine after ${count} infraction(s) using role ${role}.`);
+      } else if (group === 'set' && sub === 'lockdown') {
+        const count = interaction.options.getInteger('count', true);
+        await setLockdownThreshold(guildId, count);
+        await interaction.reply(`Lockdown triggered after ${count} flagged events/min.`);
       } else if (group === 'whitelist' && sub === 'add') {
         const domain = interaction.options.getString('domain', true);
         await addWhitelistDomain(guildId, domain);
