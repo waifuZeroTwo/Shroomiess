@@ -53,6 +53,7 @@ const client = new Client({
 client.prefixFeatures = prefixFeatures;
 client.slashFeatures = slashFeatures;
 client.features = prefixFeatures;
+client.commands = commands;
 
 // Allow each feature to register itself
 for (const feature of Object.values(prefixFeatures)) {
@@ -60,16 +61,17 @@ for (const feature of Object.values(prefixFeatures)) {
     feature.register(client, commands);
   }
 }
-
-// Allow slash features to register themselves
-for (const feature of Object.values(slashFeatures)) {
-  if (typeof feature.registerSlash === 'function') {
-    feature.registerSlash(client);
-  }
-}
-
 client.once('ready', async () => {
   console.log(`Logged in as ${client.user.tag}`);
+  for (const feature of Object.values(slashFeatures)) {
+    if (typeof feature.registerSlash === 'function') {
+      try {
+        await feature.registerSlash(client);
+      } catch (err) {
+        console.error('Failed to register slash feature:', err);
+      }
+    }
+  }
 });
 
 async function start() {

@@ -282,4 +282,4 @@ function register(client, commands) {
   });
 }
 
-module.exports = { register };
+module.exports = { register, formatDate, parseDate, DATE_FORMATS };
