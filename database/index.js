@@ -9,6 +9,7 @@ let bans;
 let warnings;
 let mutes;
 let guildSettings;
+let birthdays;
 
 function ensureBans() {
   if (!bans) {
@@ -38,6 +39,13 @@ function ensureGuildSettings() {
   }
 }
 
+function ensureBirthdays() {
+  if (!birthdays) {
+    console.warn('Birthdays collection is not initialized. Call init() first.');
+    throw new Error('Database not initialized');
+  }
+}
+
 async function init() {
   const mongoUri = process.env.MONGODB_URI;
   if (!mongoUri) {
@@ -52,6 +60,7 @@ async function init() {
     warnings = db.collection('warnings');
     mutes = db.collection('mutes');
     guildSettings = db.collection('guildSettings');
+    birthdays = db.collection('birthdays');
     console.log('Connected to MongoDB');
   } catch (err) {
     console.error('MongoDB connection error:', err);
@@ -118,6 +127,25 @@ async function getActiveMutes() {
   return await mutes.find({ expiresAt: { $gt: new Date() } }).toArray();
 }
 
+async function setBirthday({ guildId, userId, date }) {
+  ensureBirthdays();
+  await birthdays.updateOne(
+    { guildId, userId },
+    { $set: { guildId, userId, date } },
+    { upsert: true }
+  );
+}
+
+function clearBirthday(guildId, userId) {
+  ensureBirthdays();
+  return birthdays.deleteOne({ guildId, userId });
+}
+
+function listBirthdays(guildId) {
+  ensureBirthdays();
+  return birthdays.find({ guildId }).toArray();
+}
+
 async function setModLogChannel(guildId, channelId) {
   ensureGuildSettings();
   await guildSettings.updateOne(
@@ -131,6 +159,51 @@ async function getModLogChannel(guildId) {
   ensureGuildSettings();
   const doc = await guildSettings.findOne({ guildId });
   return doc ? doc.modLogChannelId : null;
+}
+
+async function setBirthdayChannel(guildId, channelId) {
+  ensureGuildSettings();
+  await guildSettings.updateOne(
+    { guildId },
+    { $set: { guildId, birthdayChannelId: channelId } },
+    { upsert: true }
+  );
+}
+
+async function getBirthdayChannel(guildId) {
+  ensureGuildSettings();
+  const doc = await guildSettings.findOne({ guildId });
+  return doc ? doc.birthdayChannelId : null;
+}
+
+async function setBirthdayRole(guildId, roleId) {
+  ensureGuildSettings();
+  await guildSettings.updateOne(
+    { guildId },
+    { $set: { guildId, birthdayRoleId: roleId } },
+    { upsert: true }
+  );
+}
+
+async function getBirthdayRole(guildId) {
+  ensureGuildSettings();
+  const doc = await guildSettings.findOne({ guildId });
+  return doc ? doc.birthdayRoleId : null;
+}
+
+async function setBirthdayFormat(guildId, format) {
+  ensureGuildSettings();
+  await guildSettings.updateOne(
+    { guildId },
+    { $set: { guildId, birthdayFormat: format } },
+    { upsert: true }
+  );
+}
+
+async function getBirthdayFormat(guildId) {
+  ensureGuildSettings();
+  const doc = await guildSettings.findOne({ guildId });
+  return doc ? doc.birthdayFormat : null;
 }
 
 async function close() {
@@ -150,7 +223,16 @@ module.exports = {
   addMute,
   removeMute,
   getActiveMutes,
+  setBirthday,
+  clearBirthday,
+  listBirthdays,
   setModLogChannel,
   getModLogChannel,
+  setBirthdayChannel,
+  getBirthdayChannel,
+  setBirthdayRole,
+  getBirthdayRole,
+  setBirthdayFormat,
+  getBirthdayFormat,
   close
 };
