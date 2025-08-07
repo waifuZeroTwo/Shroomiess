@@ -28,8 +28,61 @@ function formatDate(dateStr, format) {
   }
 }
 
+function parseDate(dateStr, format) {
+  let year = 2000;
+  let month;
+  let day;
+  let match;
+  switch (format) {
+    case 'YYYY-MM-DD':
+      match = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+      if (!match) return null;
+      year = parseInt(match[1], 10);
+      month = parseInt(match[2], 10);
+      day = parseInt(match[3], 10);
+      break;
+    case 'MM/DD':
+      match = dateStr.match(/^(\d{2})\/(\d{2})$/);
+      if (!match) return null;
+      month = parseInt(match[1], 10);
+      day = parseInt(match[2], 10);
+      break;
+    case 'DD/MM':
+      match = dateStr.match(/^(\d{2})\/(\d{2})$/);
+      if (!match) return null;
+      day = parseInt(match[1], 10);
+      month = parseInt(match[2], 10);
+      break;
+    case 'DD.MM.YYYY':
+      match = dateStr.match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
+      if (!match) return null;
+      day = parseInt(match[1], 10);
+      month = parseInt(match[2], 10);
+      year = parseInt(match[3], 10);
+      break;
+    default:
+      return null;
+  }
+
+  if (
+    month < 1 ||
+    month > 12 ||
+    day < 1 ||
+    day > new Date(year, month, 0).getDate()
+  ) {
+    return null;
+  }
+
+  return `${year.toString().padStart(4, '0')}-${month
+    .toString()
+    .padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
+}
+
 function register(client, commands) {
-  commands.set('!setbirthday', '`!setbirthday YYYY-MM-DD` - store your birthday.');
+  commands.set(
+    '!setbirthday',
+    '`!setbirthday <date>` - store your birthday using the server\'s format.'
+  );
   commands.set('!clearbirthday', '`!clearbirthday` - remove your birthday.');
   commands.set('!birthdays', '`!birthdays` - list upcoming birthdays.');
   commands.set(
@@ -55,14 +108,23 @@ function register(client, commands) {
       const command = args.shift().toLowerCase();
 
       if (command === '!setbirthday') {
+        const format = await getBirthdayFormat(message.guild.id);
+        if (!DATE_FORMATS.includes(format)) {
+          return message.reply(
+            `Invalid birthday format configured. Supported formats: ${DATE_FORMATS.join(
+              ', '
+            )}`
+          );
+        }
         const date = args[0];
-        if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-          return message.reply('Please use the format YYYY-MM-DD.');
+        const parsed = parseDate(date, format);
+        if (!parsed) {
+          return message.reply(`Please use the format ${format}.`);
         }
         await setBirthday({
           guildId: message.guild.id,
           userId: message.author.id,
-          date
+          date: parsed
         });
         return message.reply('Your birthday has been saved.');
       }
@@ -77,7 +139,14 @@ function register(client, commands) {
         if (!birthdays.length) {
           return message.reply('No birthdays recorded.');
         }
-        const format = (await getBirthdayFormat(message.guild.id)) || 'YYYY-MM-DD';
+        const format = await getBirthdayFormat(message.guild.id);
+        if (!DATE_FORMATS.includes(format)) {
+          return message.reply(
+            `Invalid birthday format configured. Supported formats: ${DATE_FORMATS.join(
+              ', '
+            )}`
+          );
+        }
         const months = Array.from({ length: 12 }, () => []);
         for (const b of birthdays) {
           const [year, month, day] = b.date.split('-').map(Number);
@@ -139,7 +208,9 @@ function register(client, commands) {
         }
         const format = args[0];
         if (!DATE_FORMATS.includes(format)) {
-          return message.reply(`Format must be one of: ${DATE_FORMATS.join(', ')}`);
+          return message.reply(
+            `Format must be one of: ${DATE_FORMATS.join(', ')}`
+          );
         }
         await setBirthdayFormat(message.guild.id, format);
         return message.reply(`Birthday format set to ${format}.`);

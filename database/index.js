@@ -11,6 +11,8 @@ let mutes;
 let guildSettings;
 let birthdays;
 
+const DEFAULT_BIRTHDAY_FORMAT = 'YYYY-MM-DD';
+
 function ensureBans() {
   if (!bans) {
     console.warn('Bans collection is not initialized. Call init() first.');
@@ -203,7 +205,7 @@ async function setBirthdayFormat(guildId, format) {
 async function getBirthdayFormat(guildId) {
   ensureGuildSettings();
   const doc = await guildSettings.findOne({ guildId });
-  return doc ? doc.birthdayFormat : null;
+  return doc && doc.birthdayFormat ? doc.birthdayFormat : DEFAULT_BIRTHDAY_FORMAT;
 }
 
 async function close() {
