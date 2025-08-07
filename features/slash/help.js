@@ -1,5 +1,19 @@
 const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 
+function chunkLines(lines, max = 1024) {
+  const chunks = [];
+  let buf = '';
+  for (const line of lines) {
+    if ((buf + line + '\n').length > max) {
+      chunks.push(buf.trimEnd());
+      buf = '';
+    }
+    buf += line + '\n';
+  }
+  if (buf) chunks.push(buf.trimEnd());
+  return chunks;
+}
+
 async function registerSlash(client) {
   const data = new SlashCommandBuilder()
     .setName('help')
@@ -39,25 +53,47 @@ async function registerSlash(client) {
       const embeds = [];
 
       if (userCategories.size) {
-        const embed = new EmbedBuilder()
+        let embed = new EmbedBuilder()
           .setTitle('Available Commands')
           .setColor(randomColor());
+        let fieldCount = 0;
         for (const [cat, lines] of userCategories) {
           const name = `${categoryEmojis[cat] ?? ''} ${cat}`.trim();
-          embed.addFields({ name, value: lines.join('\n') });
+          for (const value of chunkLines(lines)) {
+            if (fieldCount === 25) {
+              embeds.push(embed);
+              embed = new EmbedBuilder()
+                .setTitle('Available Commands')
+                .setColor(randomColor());
+              fieldCount = 0;
+            }
+            embed.addFields({ name, value });
+            fieldCount++;
+          }
         }
-        embeds.push(embed);
+        if (fieldCount) embeds.push(embed);
       }
 
       if (adminCategories.size) {
-        const embed = new EmbedBuilder()
+        let embed = new EmbedBuilder()
           .setTitle('ADMIN ONLY')
           .setColor(randomColor());
+        let fieldCount = 0;
         for (const [cat, lines] of adminCategories) {
           const name = `${categoryEmojis[cat] ?? ''} ${cat}`.trim();
-          embed.addFields({ name, value: lines.join('\n') });
+          for (const value of chunkLines(lines)) {
+            if (fieldCount === 25) {
+              embeds.push(embed);
+              embed = new EmbedBuilder()
+                .setTitle('ADMIN ONLY')
+                .setColor(randomColor());
+              fieldCount = 0;
+            }
+            embed.addFields({ name, value });
+            fieldCount++;
+          }
         }
-        embeds.push(embed);
+        if (fieldCount) embeds.push(embed);
       }
 
       try {
