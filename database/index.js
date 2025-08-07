@@ -14,6 +14,7 @@ let reputations;
 let repTransactions;
 // Anti-raid collections
 const antiRaid = require('./antiRaid');
+const { init: initAntiRaid, ...antiRaidHelpers } = antiRaid;
 
 const DEFAULT_BIRTHDAY_FORMAT = 'YYYY-MM-DD';
 
@@ -84,7 +85,7 @@ async function init() {
     reputations = db.collection('reputations');
     repTransactions = db.collection('repTransactions');
     // initialize anti-raid collections
-    antiRaid.init(db);
+    initAntiRaid(db); // must supply the db instance
     console.log('Connected to MongoDB');
   } catch (err) {
     console.error('MongoDB connection error:', err);
@@ -315,5 +316,5 @@ module.exports = {
   addBadge,
   close,
   // anti-raid helpers
-  ...antiRaid
+  ...antiRaidHelpers
 };
