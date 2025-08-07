@@ -50,6 +50,11 @@ const client = new Client({
   ]
 });
 
+// Increase the default maximum number of listeners for shared events.
+// This avoids Node's memory leak warnings when multiple features attach
+// `messageCreate` handlers during startup.
+client.setMaxListeners(20);
+
 client.prefixFeatures = prefixFeatures;
 client.slashFeatures = slashFeatures;
 client.features = prefixFeatures;
