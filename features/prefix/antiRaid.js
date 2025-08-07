@@ -13,6 +13,28 @@ const userInfractions = new Map();
 const guildEventTimestamps = new Map();
 const lockedGuilds = new Set();
 const pendingVerifications = new Map();
+const raidSummaries = new Map();
+
+function recordSummary(guild, field, amount) {
+  let summary = raidSummaries.get(guild.id);
+  if (!summary) {
+    summary = { joins: 0, spamMsgs: 0, timeout: null };
+    raidSummaries.set(guild.id, summary);
+  }
+  summary[field] = (summary[field] || 0) + amount;
+  if (!summary.timeout) {
+    summary.timeout = setTimeout(() => {
+      guild.client.emit('antiRaidSummary', {
+        guildId: guild.id,
+        joins: summary.joins,
+        spamMsgs: summary.spamMsgs
+      });
+      summary.joins = 0;
+      summary.spamMsgs = 0;
+      summary.timeout = null;
+    }, 10000);
+  }
+}
 
 function generateChallenge(settings) {
   if (settings.verifyQuestion) {
@@ -44,7 +66,10 @@ async function startVerification(member, settings) {
     }
     await logAntiRaidEvent(member.guild.id, 'verifyChallenge', {
       userId: member.id,
-      question
+      question,
+      timestamp: Date.now(),
+      rule: 'verification',
+      response: 'challenge'
     });
   } catch (_) {}
 }
@@ -56,7 +81,10 @@ async function handleVerifyMessage(message) {
   const content = (message.content || '').trim();
   await logAntiRaidEvent(pending.guildId, 'verifyAttempt', {
     userId: message.author.id,
-    answer: content
+    answer: content,
+    timestamp: Date.now(),
+    rule: 'verification',
+    response: 'attempt'
   });
   if (content.toLowerCase() === pending.answer) {
     pendingVerifications.delete(message.author.id);
@@ -84,13 +112,19 @@ async function handleVerifyMessage(message) {
     }
     await message.reply('Verification successful! You now have access.').catch(() => {});
     await logAntiRaidEvent(pending.guildId, 'verifySuccess', {
-      userId: message.author.id
+      userId: message.author.id,
+      timestamp: Date.now(),
+      rule: 'verification',
+      response: 'success'
     });
   } else {
     await message.reply('Incorrect answer. Please try again.').catch(() => {});
     await logAntiRaidEvent(pending.guildId, 'verifyFailure', {
       userId: message.author.id,
-      answer: content
+      answer: content,
+      timestamp: Date.now(),
+      rule: 'verification',
+      response: 'failure'
     });
   }
 }
@@ -114,7 +148,12 @@ async function lockdownGuild(guild, count) {
     }
   } catch (_) {}
   guild.client.emit('antiRaidLockdown', { guild, count });
-  await logAntiRaidEvent(guild.id, 'lockdown', { count });
+  await logAntiRaidEvent(guild.id, 'lockdown', {
+    count,
+    timestamp: Date.now(),
+    rule: 'lockdownThreshold',
+    response: 'lockdown'
+  });
 }
 
 async function trackEvent(guild, settings) {
@@ -132,7 +171,7 @@ async function trackEvent(guild, settings) {
 }
 
 async function handleInfraction(guild, member, settings) {
-  if (!member) return;
+  if (!member) return 'none';
   let guildMap = userInfractions.get(guild.id);
   if (!guildMap) {
     guildMap = new Map();
@@ -141,12 +180,21 @@ async function handleInfraction(guild, member, settings) {
   const count = (guildMap.get(member.id) || 0) + 1;
   guildMap.set(member.id, count);
 
+  let response = 'none';
+  const now = Date.now();
+
   if (settings.muteRoleId && count >= (settings.shadowMuteThreshold || 1) && !member.roles.cache.has(settings.muteRoleId)) {
     try {
       await member.roles.add(settings.muteRoleId, 'Anti-raid shadow mute');
     } catch (_) {}
     guild.client.emit('antiRaidShadowMute', { guild, user: member.user });
-    await logAntiRaidEvent(guild.id, 'shadowMute', { userId: member.id });
+    response = 'shadowMute';
+    await logAntiRaidEvent(guild.id, 'shadowMute', {
+      userId: member.id,
+      timestamp: now,
+      rule: 'shadowMuteThreshold',
+      response
+    });
   }
 
   if (settings.suspectRoleId && count >= (settings.quarantineThreshold || 3) && !member.roles.cache.has(settings.suspectRoleId)) {
@@ -154,10 +202,17 @@ async function handleInfraction(guild, member, settings) {
       await member.roles.add(settings.suspectRoleId, 'Anti-raid quarantine');
     } catch (_) {}
     guild.client.emit('antiRaidQuarantine', { guild, user: member.user });
-    await logAntiRaidEvent(guild.id, 'quarantine', { userId: member.id });
+    response = 'quarantine';
+    await logAntiRaidEvent(guild.id, 'quarantine', {
+      userId: member.id,
+      timestamp: now,
+      rule: 'quarantineThreshold',
+      response
+    });
   }
 
   await trackEvent(guild, settings);
+  return response;
 }
 
 async function handleGuildMemberAdd(member) {
@@ -170,12 +225,20 @@ async function handleGuildMemberAdd(member) {
       joins = [];
       joinTimestamps.set(guildId, joins);
     }
-    joins.push(now);
+    joins.push({ time: now, userId: member.id });
     const window = (settings.joinThreshold?.seconds || 10) * 1000;
-    while (joins.length && now - joins[0] > window) joins.shift();
+    while (joins.length && now - joins[0].time > window) joins.shift();
     if (settings.joinThreshold && joins.length >= settings.joinThreshold.count) {
+      const userIds = joins.map((j) => j.userId);
       member.client.emit('antiRaidJoinSpike', { guild: member.guild, count: joins.length });
-      await logAntiRaidEvent(guildId, 'joinSpike', { count: joins.length });
+      recordSummary(member.guild, 'joins', 1);
+      await logAntiRaidEvent(guildId, 'joinSpike', {
+        userIds,
+        count: joins.length,
+        timestamp: now,
+        rule: 'joinThreshold',
+        response: 'none'
+      });
       await trackEvent(member.guild, settings);
     }
     let guildMap = memberJoinTimes.get(guildId);
@@ -228,22 +291,39 @@ async function handleMessage(message) {
     timestamps.push(now);
     while (timestamps.length && now - timestamps[0] > 5000) timestamps.shift();
     if (settings.msgThreshold && timestamps.length > settings.msgThreshold) {
-      message.client.emit('antiRaidSpamDetected', { guild: message.guild, user: message.author });
-      await logAntiRaidEvent(guildId, 'msgSpike', {
-        userId: message.author.id,
+      message.client.emit('antiRaidSpamDetected', {
+        guild: message.guild,
+        user: message.author,
         count: timestamps.length
       });
-      await handleInfraction(message.guild, message.member, settings);
+      recordSummary(message.guild, 'spamMsgs', 1);
+      const response = await handleInfraction(message.guild, message.member, settings);
+      await logAntiRaidEvent(guildId, 'msgSpike', {
+        userId: message.author.id,
+        count: timestamps.length,
+        timestamp: now,
+        rule: 'msgThreshold',
+        response
+      });
     }
 
     const domains = extractDomains(message.content || '');
     for (const domain of domains) {
       if (!settings.whitelist || !settings.whitelist.includes(domain)) {
+        recordSummary(message.guild, 'spamMsgs', 1);
+        const response = await handleInfraction(message.guild, message.member, settings);
+        message.client.emit('antiRaidSpamDetected', {
+          guild: message.guild,
+          user: message.author,
+          count: 1
+        });
         await logAntiRaidEvent(guildId, 'filteredInvite', {
           userId: message.author.id,
-          domain
+          domain,
+          timestamp: now,
+          rule: 'inviteFilter',
+          response
         });
-        await handleInfraction(message.guild, message.member, settings);
         message.delete().catch(() => {});
         return;
       }
@@ -267,13 +347,19 @@ async function handleMessage(message) {
         if (entry.users.size > 1) {
           message.client.emit('antiRaidSpamDetected', {
             guild: message.guild,
-            hash
+            user: message.author,
+            hash,
+            count: entry.users.size
           });
+          recordSummary(message.guild, 'spamMsgs', 1);
+          const response = await handleInfraction(message.guild, message.member, settings);
           await logAntiRaidEvent(guildId, 'duplicateContent', {
             hash,
-            users: Array.from(entry.users)
+            users: Array.from(entry.users),
+            timestamp: now,
+            rule: 'duplicateContent',
+            response
           });
-          await handleInfraction(message.guild, message.member, settings);
         }
       }
     }
