@@ -19,6 +19,7 @@ function ensureEvents() {
 }
 
 function init(db) {
+  if (!db) throw new Error('antiRaid.init called without db');
   antiRaidSettings = db.collection('antiRaidSettings');
   antiRaidEvents = db.collection('antiRaidEvents');
 }
