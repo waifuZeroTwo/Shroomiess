@@ -36,13 +36,6 @@ async function registerSlash(client) {
     });
   }
 
-  try {
-    await client.application.commands.create(mute.toJSON());
-    await client.application.commands.create(unmute.toJSON());
-  } catch (err) {
-    console.error('Failed to register mute slash commands:', err);
-  }
-
   client.on('interactionCreate', async (interaction) => {
     try {
       if (!interaction.isChatInputCommand()) return;
@@ -90,6 +83,8 @@ async function registerSlash(client) {
       console.error('Error handling mute slash command:', err);
     }
   });
+
+  return [mute.toJSON(), unmute.toJSON()];
 }
 
 module.exports = { registerSlash };

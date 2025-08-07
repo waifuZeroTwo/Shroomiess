@@ -1,5 +1,5 @@
 require('dotenv').config();
-const { Client, GatewayIntentBits, Partials } = require('discord.js');
+const { Client, GatewayIntentBits, Partials, REST, Routes } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
 const db = require('./database');
@@ -63,14 +63,37 @@ for (const feature of Object.values(prefixFeatures)) {
 }
 client.once('ready', async () => {
   console.log(`Logged in as ${client.user.tag}`);
+
+  const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_BOT_TOKEN);
+  const payloads = [];
+
   for (const feature of Object.values(slashFeatures)) {
     if (typeof feature.registerSlash === 'function') {
       try {
-        await feature.registerSlash(client);
+        const cmds = await feature.registerSlash(client);
+        if (Array.isArray(cmds)) payloads.push(...cmds);
       } catch (err) {
         console.error('Failed to register slash feature:', err);
       }
     }
+  }
+
+  const guildId = process.env.GUILD_ID;
+  try {
+    if (process.env.NODE_ENV === 'production') {
+      await rest.put(Routes.applicationCommands(client.user.id), { body: payloads });
+      console.log('Registered global slash commands');
+    } else if (guildId) {
+      await rest.put(
+        Routes.applicationGuildCommands(client.user.id, guildId),
+        { body: payloads }
+      );
+      console.log(`Registered guild slash commands for ${guildId}`);
+    } else {
+      console.warn('GUILD_ID not set; skipping slash command registration');
+    }
+  } catch (err) {
+    console.error('Failed to register application commands:', err);
   }
 });
 

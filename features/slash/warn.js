@@ -32,13 +32,6 @@ async function registerSlash(client) {
     });
   }
 
-  try {
-    await client.application.commands.create(warn.toJSON());
-    await client.application.commands.create(warnings.toJSON());
-  } catch (err) {
-    console.error('Failed to register warn slash commands:', err);
-  }
-
   client.on('interactionCreate', async (interaction) => {
     try {
       if (!interaction.isChatInputCommand()) return;
@@ -77,6 +70,8 @@ async function registerSlash(client) {
       console.error('Error handling warn slash command:', err);
     }
   });
+
+  return [warn.toJSON(), warnings.toJSON()];
 }
 
 module.exports = { registerSlash };

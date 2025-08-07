@@ -13,12 +13,6 @@ async function registerSlash(client) {
     });
   }
 
-  try {
-    await client.application.commands.create(data.toJSON());
-  } catch (err) {
-    console.error('Failed to register /help:', err);
-  }
-
   client.on('interactionCreate', async (interaction) => {
     try {
       if (!interaction.isChatInputCommand()) return;
@@ -76,6 +70,8 @@ async function registerSlash(client) {
       console.error('Error handling /help command:', err);
     }
   });
+
+  return [data.toJSON()];
 }
 
 module.exports = { registerSlash };

@@ -87,17 +87,6 @@ async function registerSlash(client) {
     });
   }
 
-  try {
-    await client.application.commands.create(setBirthdayCmd.toJSON());
-    await client.application.commands.create(clearBirthdayCmd.toJSON());
-    await client.application.commands.create(listCmd.toJSON());
-    await client.application.commands.create(channelCmd.toJSON());
-    await client.application.commands.create(roleCmd.toJSON());
-    await client.application.commands.create(formatCmd.toJSON());
-  } catch (err) {
-    console.error('Failed to register birthday slash commands:', err);
-  }
-
   client.on('interactionCreate', async (interaction) => {
     try {
       if (!interaction.isChatInputCommand()) return;
@@ -184,6 +173,15 @@ async function registerSlash(client) {
       console.error('Error handling birthday slash command:', err);
     }
   });
+
+  return [
+    setBirthdayCmd.toJSON(),
+    clearBirthdayCmd.toJSON(),
+    listCmd.toJSON(),
+    channelCmd.toJSON(),
+    roleCmd.toJSON(),
+    formatCmd.toJSON()
+  ];
 }
 
 module.exports = { registerSlash };
