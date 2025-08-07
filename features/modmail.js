@@ -12,7 +12,8 @@ function register(client, commands) {
         .setTitle('Open a Modmail Ticket?')
         .setDescription('React with ✅ to confirm or 🚫 to cancel.');
 
-      const prompt = await message.channel.send({ embeds: [promptEmbed] });
+      // Send prompt directly to the user to confirm opening a ticket
+      const prompt = await message.author.send({ embeds: [promptEmbed] });
       await prompt.react('✅');
       await prompt.react('🚫');
 
@@ -23,7 +24,7 @@ function register(client, commands) {
 
       if (!reaction || reaction.emoji.name === '🚫') {
         const cancelEmbed = new EmbedBuilder().setDescription('Modmail request cancelled.');
-        await message.channel.send({ embeds: [cancelEmbed] });
+        await message.author.send({ embeds: [cancelEmbed] });
         client.emit('modmail', {
           guildId: MAIN_GUILD_ID,
           userId: message.author.id,
@@ -55,7 +56,7 @@ function register(client, commands) {
       const confirmEmbed = new EmbedBuilder().setDescription(
         'Your ticket has been opened. Staff will reply soon.'
       );
-      await message.channel.send({ embeds: [confirmEmbed] });
+      await message.author.send({ embeds: [confirmEmbed] });
 
       client.emit('modmail', {
         guildId: MAIN_GUILD_ID,
