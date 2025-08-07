@@ -9,7 +9,7 @@ const {
   getBirthdayRole,
   setBirthdayFormat,
   getBirthdayFormat
-} = require('../database');
+} = require('../../database');
 
 const DATE_FORMATS = ['YYYY-MM-DD', 'MM/DD', 'DD/MM', 'DD.MM.YYYY'];
 

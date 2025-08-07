@@ -1,4 +1,4 @@
-const { awardReputation, getReputation, getLastRepTimestamp, addBadge } = require('../database');
+const { awardReputation, getReputation, getLastRepTimestamp, addBadge } = require('../../database');
 
 const COOLDOWN_MS = 24 * 60 * 60 * 1000;
 const BADGE_THRESHOLDS = [

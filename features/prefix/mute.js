@@ -1,4 +1,4 @@
-const { addMute, removeMute, getActiveMutes } = require('../database');
+const { addMute, removeMute, getActiveMutes } = require('../../database');
 
 function parseDuration(str) {
   const match = /^\s*(\d+)([smhd])?$/i.exec(str);
