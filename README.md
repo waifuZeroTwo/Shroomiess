@@ -12,6 +12,7 @@ It supports legacy prefix commands (`!`) and modern slash commands (`/`), all au
 - **Modmail** – DM-based support tickets with claim/unclaim/close workflow and transcript retrieval.
 - **Anti‑Raid** – Join/message spike detection, link whitelist, verification challenges, shadow mutes, quarantines, and optional lockdowns.
 - **Logging** – Moderation actions, reputation transactions, modmail events, and anti‑raid summaries can all be sent to a chosen channel.
+- **Custom Commands** – Administrators can create prefix or slash commands with dynamic responses and optional role restrictions.
 
 ## Installation
 
@@ -82,6 +83,20 @@ Formats: `YYYY-MM-DD`, `MM/DD`, `DD/MM`, `DD.MM.YYYY`.
 - `!reputation [@User]` / `/reputation [@User]`
 
 Award reputation once per day per recipient. Badges unlock at 10 (Bronze), 50 (Silver), and 100 (Gold) points.
+
+### Custom Commands
+
+- `!custom add prefix greet Hello {{user}}` – creates `!greet` responding with the user mention.
+- `/custom add type:slash name:greet response:"Hello {{user}}"` – creates `/greet` with the same reply.
+- Use `edit`, `remove`, and `list` subcommands to manage entries.
+
+Placeholders:
+
+- `{{user}}` – mentions the user invoking the command.
+- `{{channel}}` – mentions the current channel.
+- `{{guild}}` – inserts the server name.
+
+Mention roles (prefix) or supply role options (slash) during `add`/`edit` to restrict usage.
 
 ## Data Storage
 
